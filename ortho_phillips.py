@@ -227,10 +227,6 @@ class make_excelp ():
 
         self.dfper = pd.DataFrame(self.person_data, index=['Patient name', 'ID', 'Manufacturer', 'Content Date', 'Person Observer Name', 'Number of irradiation events'], columns=[""])
 
-        #print(self.data_total)
-        '''print(self.dft)
-        print(self.dfper)'''
-
 
         return self.df, self.dft, self.dfper, self.name_id[0]
         # Output directory where Excel files will be saved
@@ -238,7 +234,4 @@ class make_excelp ():
 
     def get_dataframes(self):
         return self.df, self.dft, self.dfper, self.name_id[0]
-
-
-#test = make_excelp()
-#test.startpro()
+        
