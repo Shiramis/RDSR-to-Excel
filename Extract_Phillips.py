@@ -29,16 +29,16 @@ for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
 
         # Create a WordFile object and append it to the list
-        word_file = PdfFilep(filename, file_path)
-        pdf_files.append(word_file)
+        pdf_file = PdfFilep(filename, file_path)
+        pdf_files.append(pdf_file)
 
 ot = input ("Write the path of the excel file: ")
 output_directory = ot
 patients =[]
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
-    for word_file in pdf_files:
+    for pdf_file in pdf_files:
         data = make_excelp()
-        df, dft, dfper, name_id = data.startpro(f"{word_file.file_path}")
+        df, dft, dfper, name_id = data.startpro(f"{pdf_file.file_path}")
 
         sheet_name_df = f"{name_id}"
 
