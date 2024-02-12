@@ -28,9 +28,8 @@ class make_excel ():
         self.cont.append(ex_data[3])
 
         self.obs = []
-        self.obs.append(ex_data[38])
+
         self.time =[]
-        print(self.obs)
         self.totaldata = []
         self.distance =[]
         self.rpd = []
@@ -56,6 +55,11 @@ class make_excel ():
         self.cfw = []
         print(ex_data)
         for i in range(0, len(ex_data)):
+            if ex_data [i] == "Person":
+                if ex_data[i+1] == "Observer" and ex_data[i+2] == "Name":
+                    self.obs.append(ex_data[i+4])
+                    if ex_data[i+4] == "DR.":
+                        self.obs[0] = ex_data[i+4] +" "+ ex_data[i+5]
             if re.match(r'Manufacturer', ex_data[i]):
                 self.manuf.append(ex_data[i+2])
             elif re.match(r'Total:+\d|Total:\w',ex_data[i]):
@@ -66,16 +70,19 @@ class make_excel ():
             elif re.match(r'Time:+\d',ex_data[i]):
                 self.time.append(ex_data[i]) # Total Fluoro Time (s), Total Acquisition Time,
                 # Exposure time
+                if ex_data[i - 1] == "mAExposure":
+                    self.ext.append(ex_data[i])  # Exposure Time (ms)
             elif re.match(r'Definition:+\d|Deﬁnition:+\d',ex_data[i]):
                 self.rpd.append(ex_data[i]) #Reference Point Definition (cm)
             elif re.match(r"Product:+\d",ex_data[i]):
                 self.dap.append(ex_data[i]) #Dose area product
             elif re.match(r"\(RP\):\d",ex_data[i]):
                 self.drp.append(ex_data[i]) # Dose (RP) (Gy)
-            elif re.match(r"Angle:-?\d+(\.\d+)?",ex_data[i]) and "Primary" == ex_data[i-1]:
-                self.ppa.append(ex_data[i]) # Positioner Primary Angle (deg)
-            elif re.match(r"Angle:-?\d+(\.\d+)?",ex_data[i]) and "Secondary" == ex_data[i-1]:
-                self.psa.append(ex_data[i])#Positioner Secondary Angle (deg)
+            elif re.match(r"Angle:-?\d+(\.\d+)?|Angle:?\d+(\.\d+)?", ex_data[i]):
+                if "Primary" == ex_data[i-1]:
+                    self.ppa.append(ex_data[i])  # Positioner Primary Angle (deg)
+                elif "Secondary" == ex_data[i-1]:
+                    self.psa.append(ex_data[i])  # Positioner Secondary Angle (deg)
             elif re.match(r"Material:\w",ex_data[i]):
                 self.xfm.append(ex_data[i]) #X-Ray Filter Material
             elif re.match(r"Mode:\w",ex_data[i]):
@@ -88,11 +95,9 @@ class make_excel ():
                 self.kvp.append(ex_data[i]) #KVP
             elif re.match(r"Current:\d", ex_data[i]):
                 self.xrtc.append(ex_data[i]) #X-Ray Tube Current (mA)
-            elif ex_data[i-1] == "mAExposure" and re.match(r"Time:\d", ex_data[i]):
-                self.ext.append(ex_data[i]) #Exposure Time (ms)
             elif re.match(r"msExposure:\d", ex_data[i]):
                 self.exp.append(ex_data[i]) #Exposure (uA*s)
-            elif ex_data[i-1] == "msPulse" and re.match(r"Width:\d", ex_data[i]):
+            elif re.match(r"Width:\d", ex_data[i]) and ex_data[i-1] == "msPulse" :
                 self.pulw.append(ex_data[i]) #Pulse Width
             elif re.match(r"\d+Irradiation",ex_data[i-1]) and re.match(r"Duration:\d",ex_data[i]):
                 self.ird.append(ex_data[i]) #Irradiation Duration
@@ -103,7 +108,7 @@ class make_excel ():
             elif re.match(r"Width:\d", ex_data[i]):
                 self.cfw.append(ex_data[i]) #Collimated Field Width (mm)
                 n += 1
-            elif ex_data[i-1] == "Thickness" and re.match(r"Maximum:\d",ex_data[i]):
+            elif re.match(r"Maximum:\d",ex_data[i]) and ex_data[i-1] == "Thickness":
                 self.xrftm.append(ex_data[i]) #X-Ray Filter Thickness Maximum (mmCu)
 
         return [self.name, self.manuf, self.cont, self.obs, self.totaldata,self.distance, self.time, self.rpd, self.dap, self.fm, self.pet, self.drp, self.ppa, self.psa, self.xfm, self.cfa, self.xrftm, self.pr, self.kvp, self.xrtc, self.ext, self.exp, self.pulw, self.ird, self.dstd, self.cfh, self.cfw, n]
@@ -123,19 +128,13 @@ class make_excel ():
      ###### make all list without words######
         self.name_id = [s.replace('Patient:', '').replace(')Study:Ortho/TraumaSeries:Radiation', '').replace('#', '').replace(',', '')
                         .replace(')Study:GeneralSeries:Radiation', '').replace(')Study:InterventionSeries:Radiation', '') for s in self.name]
-
+        self.obs = [s.replace("[","").replace("]","").replace("'","") for s in self.obs]
         self.manufacturer = self.manuf[0].replace('InformationManufacturer:', '').replace('"', '')
-        print(self.manufacturer)
         self.content = self.cont[0].replace('*', '').replace(',', '')
-
-        self.obs[0] = self.obs[0].replace('(', '').replace(')', '').replace('*', '').replace(',', '')
-        self.observer = self.obs[0].split()
         self.total = [s.replace('Total:', '').replace('empty', '').replace('Reference', '').replace('Distance', '').replace('Total', '') for s in self.totaldata]
-
         self.total = [float(value) if (value is not None and value != '') else None for value in self.total]
         self.distance = [s.replace('Point:', '') for s in self.distance]
         self.time = [s.replace('Time:', '') for s in self.time]
-
         self.rpd = [s.replace('Deﬁnition:', '').replace("Definition:","").replace("cm","") for s in self.rpd]
         self.xrftm1 = [s.replace('Maximum:', '') for s in self.xrftm]
         self.xfm = [s.replace('Material:', '') for s in self.xfm]
@@ -193,15 +192,14 @@ class make_excel ():
 
 
         self.df = self.df.rename_axis('Irradiation Event X-Ray Data of '+ self.name_id[0]+" "+self.name_id[1])
-        print(self.rpd)
-        self.data_total = {"ID": self.name_id[2],"Manufacturer":self.manufacturer,"Content Date":self.content ,"Observer":self.observer[0], "Dose Area Product Total (Gym2)": self.total[0],
+        self.data_total = {"ID": self.name_id[2],"Manufacturer":self.manufacturer,"Content Date":self.content ,"Observer":self.obs, "Dose Area Product Total (Gym2)": self.total[0],
                            "Dose (RP) Total (Gy)":self.total[1],"Distance Source to Reference Poit (mm)":self.distance[0],"Fluoro Dose Area Product Total (Gym2)":self.total[3],
                                         "Fluoro Dose (RP) Total (Gy)":self.total[4],	"Total Fluoro Time (s)":self.time[0],"Acquisition Dose Area Product Total (Gym2)":self.total[4],
                                         "Acquisition Dose (RP) Total (Gy)":self.total[0],"Reference Point Definition (cm)":self.rpd[0],	"Total Acquisition Time (s)":self.total[2]}
         self.dft = pd.DataFrame(self.data_total, index=[self.name_id[0]+" "+self.name_id[1]])
         self.dft = self.dft.rename_axis('Accumulated X-Ray Dose Data')
 
-        self.person_data = [self.name_id[0]+" "+self.name_id[1],self.name_id[2],self.manufacturer,self.content[0],self.observer[0],self.events]
+        self.person_data = [self.name_id[0]+" "+self.name_id[1],self.name_id[2],self.manufacturer,self.content[0],self.obs ,self.events]
 
         self.dfper = pd.DataFrame(self.person_data, index=['Patient name', 'ID', 'Manufacturer', 'Content Date', 'Person Observer Name', 'Number of irradiation events'], columns=[""])
 
@@ -220,7 +218,7 @@ class make_excel ():
 def convert_and_append(source_list, target_list):
     result_list = []
     for item in source_list:
-        numeric_sequences = re.findall(r'\b\d+(?:\.\d+)?\b', item)
+        numeric_sequences = re.findall(r'[-+]?\b\d+(?:\.\d+)?\b', item)
 
         # Add each numeric sequence to the result
         for seq in numeric_sequences:
