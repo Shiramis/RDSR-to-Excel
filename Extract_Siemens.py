@@ -17,8 +17,8 @@ def check_and_rename_sheet(writer, sheet_name):
 
     return sheet_name
 
-f = input ('Write the path of the folder with DATA: ')
-folder_path = f
+#f = input ('Write the path of the folder with DATA: ').strip('"')
+folder_path = r"C:\Users\ssavv\Downloads\Siem"
 pdf_files = []
 
 # Iterate through files in the folder
@@ -31,8 +31,8 @@ for filename in os.listdir(folder_path):
         pdf_files.append(pdf_file)
 
 
-ot = input ("Write the path of the excel file: ")
-output_directory = ot
+#ot = input ("Write the path of the excel file: ").strip('"')
+output_directory = r"C:\Users\ssavv\Downloads\Siemens Axiom Artis.xlsx"
 patients =[]
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for pdf_file in pdf_files:
