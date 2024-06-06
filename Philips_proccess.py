@@ -7,7 +7,6 @@ import datetime
 class make_excelp ():
 
     def extract_text_from_pdf(self,pdf_file_path):
-        # Initialize an empty list to store the extracted data
         self.text = []
         with open(pdf_file_path, "rb") as pdf_file:
             pdf_reader = PyPDF2.PdfReader(pdf_file)
@@ -24,8 +23,7 @@ class make_excelp ():
             i += 1
         else:
             self.name.append(ex_data[i])
-        print(self.name)
-        self.birth = None
+        self.birth = 'N/A'
 
         self.id = []
         self.manuf = []
@@ -36,8 +34,6 @@ class make_excelp ():
         self.rpd = []
         self.dap = []
         self.drp = []
-        self.ppa = []
-        self.psa = []
         self.alm =[]
         self.alt = []
         self.meusal =[]
@@ -45,13 +41,10 @@ class make_excelp ():
         self.xfm = []
         self.xft = []
         self.cfa = []
-        self.xrftm = []
         self.material = []
         self.thick = []
         n = 0
         self.ird = []
-        self.dstd = []
-        print (ex_data)
         for i in range(0, len(ex_data)):
             if i<10:
                 if re.match(r'\*\d|\*+\d', ex_data[i]):
@@ -81,7 +74,6 @@ class make_excelp ():
 
             if ex_data[i] == "Orthopaedics":
                 n +=1
-                self.xrftm.append(None)
                 self.dap.append(ex_data[i + 8])# Dose Area Product
                 self.drp.append(ex_data[i + 10])# Dose RP
                 self.cfa.append(ex_data[i + 11])# Collimated Field Area
@@ -96,115 +88,96 @@ class make_excelp ():
                 self.material.append(self.alm[n-1] + " & " + self.xfm[n-1])
                 self.meusal[n-1] = self.meusal[n-1].replace('X-Ray', '')
                 self.thick.append(self.alt[n-1]+self.meusal[n-1] +"Al "+self.xft[n-1]+self.meuscop[n-1]+"Cu")
-        print(self.manuf)
-        return [self.name,self.id, self.manuf, self.cont, self.obs, self.totaldata, self.rpd, self.dap, self.drp, self.ppa, self.psa, self.cfa, self.xrftm, self.ird, self.dstd, n]
+        return [self.name,self.id, self.manuf, self.cont, self.obs, self.totaldata, self.rpd, self.dap, self.drp,
+                 self.cfa, self.ird, n]
 
 
 
     def startpro(self, pdf_file, index):
-
-        # Specify the path to your Word file
         pdf_file_path = pdf_file
         text_data = self.extract_text_from_pdf(pdf_file_path)
 
         self.ndata = self.newdata(text_data)
 
         self.name,self.id, self.manuf, self.cont, self.obs, self.totaldata,\
-            self.rpd, self.dap, self.drp, self.ppa, self.psa,\
-             self.cfa, self.xrftm, self.ird, self.dstd, self.events = self.ndata
+            self.rpd, self.dap, self.drp,\
+             self.cfa, self.ird, self.events = self.ndata
 
      ###### make all list without words######
-        self.process_data()
-    def process_data(self):
-        self.process_name_and_study()
-        self.clean_and_split(self.id, 0)
-        self.clean_and_split(self.manuf, 0, exclude_quotes=True)
-        self.clean_and_split(self.cont, 0)
-        self.contime = self.cont[1].replace('X-Ray', '')
-        self.clean_and_split(self.obs, 1)
-        self.calculate_age()
-        self.total = self.clean_numeric_list(self.totaldata, remove_units=['Gy.m2', 'Gy.m', 'cm', 's', 'Gy'])
-        self.dap1 = self.convert_list_to_numbers([item.split(' ')[0] for item in self.dap])
-        self.drp1 = self.extract_and_convert(self.drp, r'\d+\.\d+e[+-]\d+')
-        self.psa1 = self.convert_list_to_numbers([item.split(' ')[0] for item in self.psa])
-        self.cfa1 = self.extract_and_convert(self.cfa, r'\d+\.\d+e[+-]\d+')
-        self.xrftm1 = self.convert_list_to_numbers(
-            [item.split(' ')[0] if isinstance(item, str) else item for item in self.xrftm])
-        self.ird1 = self.extract_numbers_from_list(self.ird)
-        self.dstd1 = self.extract_numbers_from_list(self.dstd)
-
-    def process_name_and_study(self):
         i = 0
         while not re.search(r'Study', str(self.name[i])):
             if re.match(r"\(+\w", self.name[i]):
-                self.sex = self.name[i].replace('(', '').replace(',', '')
+                self.sex = self.name[i]
             self.start_index = self.name[i]
+            indexs = i
             i += 1
-        self.study = " ".join(self.name[i + 1:]).replace("^", " ").replace("/", " ")
-        self.study = re.sub(r'^.*Study:|Series:+\w+', '', self.study)
-        self.name[0] = self.clean_text(self.name[0])
+        self.study = ""
+        for i in range(indexs + 1, len(self.name)):
+            self.study = self.study + " " + self.name[i]
+        self.study = re.sub(r'^.*Study:', '', self.study)
+        self.study = re.sub(r'Series:+\w+', '', self.study)
+        self.study = self.study.replace("^", " ").replace("/", " ")
+        self.sex = self.sex.replace('(', '').replace(',', '')
+
+        self.name[0] = self.name[0].replace(':',' ').replace('(', '').replace(')', '').replace('*', '').replace(',', '')
         self.capname = self.name[0].split()
 
-    def clean_and_split(self, data_list, index, exclude_quotes=False):
-        data_list[index] = self.clean_text(data_list[index], exclude_quotes)
-        setattr(self, data_list[0] + '_split', data_list[index].split())
+        self.id[0]= self.id[0].replace(':',' ').replace('(', '').replace(')', ' ').replace('*', '').replace(',', '')
+        self.name_id = self.id[0].split()
 
-    def calculate_age(self):
-        if self.birth:
-            year, month, day = map(int, self.birth.split(",")[0][1:].split("-"))
+        self.manuf[0] = self.manuf[0].replace('"','').replace('(', '').replace(')', '').replace('*', '').replace(',', '')
+        self.manufacturer = self.manuf
+
+        self.cont[0] = self.cont[0].replace(':',' ').replace('(', '').replace(')', '').replace('*', '').replace(',', '')
+        self.content = self.cont[0].split()
+        self.contime = self.cont[1].replace('X-Ray','')
+
+        self.obs[1] = self.obs[1].replace('(', '').replace(')', '').replace('*', '').replace(',', '')
+        self.observer = self.obs[1].split()
+        if self.birth != 'N/A':
+            self.birth = self.birth.split(',')[0][1:]
+            year, month, day = map(int, self.birth.split("-"))
             today = datetime.date.today()
             self.age = today.year - year - ((today.month, today.day) < (month, day))
         else:
             self.age = "N/A"
-
-    @staticmethod
-    def clean_text(text, exclude_quotes=False):
-        replacements = [('"', ''), ('(', ''), (')', ''), ('*', ''), (',', ''), (':', ' ')]
-        for old, new in replacements:
-            if not exclude_quotes or old != '"':
-                text = text.replace(old, new)
-        return text
-
-    @staticmethod
-    def clean_numeric_list(data_list, remove_units):
-        cleaned_list = []
-        for item in data_list:
-            for unit in remove_units:
-                item = item.replace(unit, '')
-            cleaned_list.append(float(item) if item else None)
-        return cleaned_list
-
-    @staticmethod
-    def convert_list_to_numbers(data_list):
-        converted_list = []
-        for item in data_list:
+        self.total = []
+        for item in self.totaldata:
+            value = item.replace('Gy.m2', '')
+            value = value.replace('Gy.m', '').replace('cm', '').replace('s', '')
+            if 'Gy' in value:
+                value = value.replace('Gy', '')
+            if value:
+                self.total.append(float(value))
+            else:
+                self.total.append('N/A')
+        self.moddap = [item.split(' ')[0] for item in self.dap]
+        self.dap1 = []
+        for item in self.moddap:
             try:
-                converted_list.append(int(item))
+                num = int(item)
             except ValueError:
                 try:
-                    converted_list.append(float(item))
+                    num = float(item)
                 except ValueError:
-                    converted_list.append(None)
-        return converted_list
+                    num = 'N/A'
+            self.dap1.append(num)
+        self.drp1 = [float(re.search(r'\d+\.\d+e[+-]\d+', value).group()) for value in self.drp]
 
-    @staticmethod
-    def extract_and_convert(data_list, pattern):
-        return [float(re.search(pattern, value).group()) for value in data_list]
 
-    @staticmethod
-    def extract_numbers_from_list(data_list):
-        numbers = []
-        for item in data_list:
-            numbers.extend([float(seq) if '.' in seq else int(seq) for seq in re.findall(r'\b\d+(?:\.\d+)?\b', item)])
-        return numbers
+        self.cfa1 = [float(re.search(r'\d+\.\d+e[+-]\d+', value).group()) for value in self.cfa]
+        self.ird1 = []
+        for item in self.ird:
+            numeric_sequences = re.findall(r'\b\d+(?:\.\d+)?\b', item)
 
-        # Create a pandas DataFrame from the extrac+ted data
+            for seq in numeric_sequences:
+                self.ird1.append(seq)
+        self.ird1 = [float(num) if '.' in num else int(num) for num in self.ird1]
+
         self.all_data = { "Dose Area Product (Gym\u00b2)":self.dap1,"Dose (RP) (Gy)":self.drp1,'Collimated Field Area (m\u00b2)':self.cfa1,
                           "X-Ray Filter Material":self.material,'X-Ray Filter Thickness':self.thick,
                           'Irradiation Duration (s)':self.ird1}
 
-
-        # Use regular expressions to extract numbers from mixed elements
         max_length = max(len(self.all_data[col]) for col in self.all_data)
         for col in self.all_data:
             self.all_data[col] += [np.nan] * (max_length - len(self.all_data[col]))
@@ -233,7 +206,6 @@ class make_excelp ():
         self.dfin = self.dfin.rename_axis('Patient Name')
 
         return self.df, self.dft,self.individual,self.dfin, self.person_data, self.name_id[0]
-
     def get_dataframes(self):
         return self.df, self.dft, self.dfper, self.name_id[0]
 

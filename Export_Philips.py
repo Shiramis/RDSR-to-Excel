@@ -16,19 +16,19 @@ pdf_files = []
 for filename in os.listdir(folder_path):
     if filename.endswith(".pdf"):
         file_path = os.path.join(folder_path, filename)
-        word_file = PdfFilep(filename, file_path)
-        pdf_files.append(word_file)
+        pdf_file = PdfFilep(filename, file_path)
+        pdf_files.append(pdf_file)
 
-ot = input(r'Write the path of the folder with DATA: ').strip('"')
+ot = input(r'Write the path of the Excel file: ').strip('"')
 output_directory = ot
 patients =[]
 individual =[]
 index = 0
 d = {}
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
-    for word_file in pdf_files:
+    for pdf_file in pdf_files:
         data = make_excelp()
-        df, dft, indiv, dfin, person, name_id = data.startpro(f"{word_file.file_path}", index)
+        df, dft, indiv, dfin, person, name_id = data.startpro(f"{pdf_file.file_path}", index)
 
         sheet_name_df = f"Patient {index}"
         person[0] = f"Patient {index}"
@@ -107,7 +107,7 @@ for i, width in enumerate(column_widths, start=1):
 wb.move_sheet(sheet1,offset=-index)
 wb.move_sheet(sheet2, offset=-index)
 
-wb.save(r"C:\Users\ssavv\Downloads\Data_phil.xlsx")
+wb.save(ot)
 
 def check_and_rename_sheet(writer, sheet_name):
     while sheet_name in writer.sheets:
