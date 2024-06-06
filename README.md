@@ -7,10 +7,11 @@ This project contains Python scripts designed to extract dose data from PDF and 
 ## Using the Executables
 Executable files for different C-Arms and DICOM are available for download:
 
-* Siemens Axiom: Export_Axiom.exe
-* Siemens Cios Alpha: Export_Cios.exe
-* Philips BV Pulsera: Export_Philips.exe
-* DICOM: Export_DICOM.exe
+- Siemens Axiom: [Export_Axiom.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/Export_Axiom.exe)
+- Siemens Cios Alpha: [Export_Cios.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/Export_Cios.exe)
+- Philips BV Pulsera: [Export_Philips.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/Export_Philips.exe)
+- DICOM: [export_dicom.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/export_dicom.exe)
+
   
 1. Download the appropriate executable for your needs from the releases section.
 2. Run the executable:
