@@ -34,6 +34,9 @@ Executable files for different C-Arms and DICOM are available for download:
 ## Dependencies
 
 Ensure you have the following Python packages installed:
+- `numpy`
+- `PyPDF2`
+- `datetime`
 - `openpyxl`
 - `pandas`
 - `os`
