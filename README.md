@@ -21,3 +21,20 @@ Executable files for different C-Arms and DICOM are available for download:
     Write the path of the folder with DATA: "path/to/pdf_folder"
     Write the path of the excel file: "path/to/output_excel_file.xlsx"
 ```
+## File Descriptions
+
+- `Export_Axiom.py`: Script for processing Siemens Axiom PDF files and exporting dose data to Excel.
+- `Axiom_proccess.py`: Contains the processing functions for Siemens Axiom.
+- `Export_Cios.py`: Script for processing Siemens Cios Alpha PDF files and exporting dose data to Excel.
+- `Cios_proccess.py`: Contains the processing functions for Siemens Cios Alpha.
+- `Export_Philips.py`: Script for processing Philips BV Pulsera PDF files and exporting dose data to Excel.
+- `Philips_proccess.py`: Contains the processing functions for Philips BV Pulsera.
+- `export_dicom.py`: Script for processing DICOM files and exporting dose data to Excel.
+
+## Dependencies
+
+Ensure you have the following Python packages installed:
+- `openpyxl`
+- `pandas`
+- `os`
+- `re`
