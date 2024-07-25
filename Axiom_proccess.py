@@ -183,7 +183,7 @@ class make_excel ():
                 else:
                     self.pr [n] = ex_data [i] #Pulse Rate (pulse/s)
             elif re.match(r"sKVP:\d|\dKVP:\d|KVP:|sKVP:|\wKVP:\d", ex_data[i]):
-                if ex_data [i] == "sKVP:" or ex_data [i] == "\dKVP:" or ex_data [i] == "KVP:" or re.match(r"\wKVP:", ex_data[i])::
+                if ex_data [i] == "sKVP:" or ex_data [i] == "KVP:" or re.match(r"\wKVP:|\dKVP:", ex_data[i])::
                     self.kvp [n] =ex_data [i+1]
                 else:
                     self.kvp [n] = ex_data [i] #KVP
