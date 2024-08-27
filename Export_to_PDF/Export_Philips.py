@@ -1,4 +1,4 @@
-from Philips_proccess import make_excelp
+from Philips_process import make_excelp
 import os
 import pandas as pd
 import openpyxl

@@ -1,5 +1,5 @@
 import openpyxl
-from Cios_proccess import make_excel
+from Cios_process import make_excel
 import os
 import pandas as pd
 from openpyxl.utils import get_column_letter
