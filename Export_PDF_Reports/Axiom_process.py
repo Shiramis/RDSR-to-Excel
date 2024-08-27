@@ -21,13 +21,14 @@ class make_excel ():
         return data, ο
 
     def newdata(self,ex_data):
-        print(ex_data)
+
         self.name = []
         i = 0
         while not re.search(r'Series', str(ex_data[i])):
             self.name.append(ex_data[i])
             i += 1
 
+        self.event_type = []
         self.birth =[]
         self.manuf = []
         self.cont = []
@@ -68,6 +69,7 @@ class make_excel ():
 
             if ex_data [i] == "Event" and ex_data[i+1] == "X-Ray" :
                 n += 1
+                self.event_type.append("N/A")
                 self.patthick.append("N/A")
                 self.dap.append("N/A")
                 self.fm.append("N/A")
@@ -104,6 +106,8 @@ class make_excel ():
                 self.manuf.append(ex_data[i+2])
             elif re.match(r'Model', ex_data[i]) and re.match(r'Observer', ex_data[i-1]):
                 self.manuf[0] += " " + ex_data[i+3]
+            elif re.match(r"Event",ex_data[i-1]) and re.match(r"Type:\w",ex_data[i]):
+                self.event_type[n] = ex_data[i]
             elif re.match(r'Total:+\d|Total:\w|Total:emptyReference|Total:emptyTotal|Total:emptyDistance',ex_data[i]):
                 index = self.totaldata.index("N/A")
                 if ex_data[i] == "Total:emptyReference" or ex_data [i] == "Total:emptyDistance"\
@@ -183,10 +187,10 @@ class make_excel ():
                 else:
                     self.pr [n] = ex_data [i] #Pulse Rate (pulse/s)
             elif re.match(r"sKVP:\d|\dKVP:\d|\wKVP:\d|KVP:|sKVP:|\dKVP:|\wKVP:", ex_data[i]):
-                if ex_data [i] == "sKVP:" or ex_data [i] == "KVP:" or re.match(r"\wKVP:|\dKVP:", ex_data[i]):
-                    self.kvp[n] = ex_data[i+1]
+                if ex_data[i] == "sKVP:" or ex_data[i] == "KVP:" or re.match(r"\wKVP:|\dKVP:", ex_data[i]):
+                    self.kvp[n] = ex_data[i + 1]
                 else:
-                    self.kvp [n] = ex_data [i] #KVP
+                    self.kvp[n] = ex_data[i]  # KVP
             elif re.match(r'Current:\d|Current:', ex_data[i]):
                 if ex_data [i] == "Current:":
                     self.xrtc [n] = ex_data [i+1]
@@ -273,6 +277,7 @@ class make_excel ():
                 self.total = [s.replace('Total:', '').replace('empty', '').replace('Reference', '').replace('Distance', '').replace('Total', '')
                           .replace('Fluoro', '') if isinstance(s, str) else s for s in self.totaldata]
                 self.total = [float(value) if (value != "N/A" and value != '') else "N/A" for value in self.total]
+            self.event_type = [s.replace('Type:', '') if s != "N/A" else "N/A" for s in self.event_type]
 
             self.distance = [s.replace('Point:', '') if s != "N/A" else "N/A" for s in self.distance]
             if self.time != "N/A":
@@ -332,32 +337,63 @@ class make_excel ():
             convert_and_append(self.cfw, self.cfw1)
             convert_and_append(self.iso, self.iso1)
             convert_and_append(self.defin, self.defin1)
+            ev_st = 0
+            ev_fl = 0
+            self.all_data_st = []
+            self.all_data_fl = []
 
-            self.all_data = { "Dose Area Product (Gym\u00b2)":self.dap1,"Patient Equivalent Thickness (mm)":self.patthick1,"Dose (RP) (Gy)":self.drp1,
-                                   "Positioner Primary Angle (deg)":self.ppa1,"Positioner Secondary Angle (deg)":self.psa1,'Collimated Field Area (m\u00b2)':self.cfa1,
-                                  'Collimated Field Height (mm)':self.cfh1,'Collimated Field Width (mm)':self.cfw1,
-                                  "X-Ray Filter Material":self.xfm,
-                                   'X-Ray Filter Thickness Maximum (mmCu)':self.xrftm1,"Pulse Rate (pulse/s)":self.pr1,
-                                  'KVP':self.kvp1,'X-Ray Tube Current (mA)':self.xrtc1,
-                                   'Exposure Time (ms)':self.ext1,'Pulse Width (ms)':self.pulw1,'Irradiation Duration (s)':self.ird1,
-                                  'Exposure (uA.s)':self.exp1,
-                                   'Distance Source to Detector (mm)':self.dstd1,"Distance Source to Isocenter (mm)": self.iso1,
-                                  "Distance Source to Reference Point (mm)":self.distance}
+            for i in range(0, self.events):
+                # Handle Stationary events
+                if self.event_type[i] == 'Stationary':
+                    ev_st += 1
+                    self.all_data_st.append({"Dose Area Product (Gym²)": self.dap1[i],
+                        "Patient Equivalent Thickness (mm)": self.patthick1[i], "Dose (RP) (Gy)": self.drp1[i],
+                        "Positioner Primary Angle (deg)": self.ppa1[i],
+                        "Positioner Secondary Angle (deg)": self.psa1[i], 'Collimated Field Area (m²)': self.cfa1[i],
+                        'Collimated Field Height (mm)': self.cfh1[i], 'Collimated Field Width (mm)': self.cfw1[i],
+                        "X-Ray Filter Material": self.xfm[i], 'X-Ray Filter Thickness Maximum (mmCu)': self.xrftm1[i],
+                        "Pulse Rate (pulse/s)": self.pr1[i], 'KVP': self.kvp1[i],
+                        'X-Ray Tube Current (mA)': self.xrtc1[i], 'Exposure Time (ms)': self.ext1[i],
+                        'Pulse Width (ms)': self.pulw1[i], 'Irradiation Duration (s)': self.ird1[i],
+                        'Exposure (uA.s)': self.exp1[i], 'Distance Source to Detector (mm)': self.dstd1[i],
+                        "Distance Source to Isocenter (mm)": self.iso1[i],
+                        "Distance Source to Reference Point (mm)": self.distance[i]})
 
-            max_length = max(len(self.all_data[col]) for col in self.all_data)
-            for col in self.all_data:
-                self.all_data[col] += [np.nan] * (max_length - len(self.all_data[col]))
+                # Handle Fluoroscopy events
+                elif self.event_type[i] == 'Fluoroscopy':
+                    ev_fl += 1
+                    self.all_data_fl.append({"Dose Area Product (Gym²)": self.dap1[i],
+                        "Patient Equivalent Thickness (mm)": self.patthick1[i], "Dose (RP) (Gy)": self.drp1[i],
+                        "Positioner Primary Angle (deg)": self.ppa1[i],
+                        "Positioner Secondary Angle (deg)": self.psa1[i], 'Collimated Field Area (m²)': self.cfa1[i],
+                        'Collimated Field Height (mm)': self.cfh1[i], 'Collimated Field Width (mm)': self.cfw1[i],
+                        "X-Ray Filter Material": self.xfm[i], 'X-Ray Filter Thickness Maximum (mmCu)': self.xrftm1[i],
+                        "Pulse Rate (pulse/s)": self.pr1[i], 'KVP': self.kvp1[i],
+                        'X-Ray Tube Current (mA)': self.xrtc1[i], 'Exposure Time (ms)': self.ext1[i],
+                        'Pulse Width (ms)': self.pulw1[i], 'Irradiation Duration (s)': self.ird1[i],
+                        'Exposure (uA.s)': self.exp1[i], 'Distance Source to Detector (mm)': self.dstd1[i],
+                        "Distance Source to Isocenter (mm)": self.iso1[i],
+                        "Distance Source to Reference Point (mm)": self.distance[i]})
 
-            self.df = pd.DataFrame(self.all_data)
-            for i in range(0,self.events+1):
-                self.df = self.df.rename(index={i: "Event {0}".format(i+1)})
-            #name = self.name_id[0]+" "+self.name_id[1]
-            name = f"Patient {index}"
-            #ID = self.name_id[2]
-            ID = f"ID {index}"
-            self.obs = f"Observer {index}"
-
-            self.df = self.df.rename_axis('Irradiation Event X-Ray Data of '+ name )
+            # Convert lists of dictionaries to DataFrames
+            if self.all_data_st:
+                self.df_st = pd.DataFrame(self.all_data_st)
+                self.df_st.index = [f"Event {i + 1}" for i in range(ev_st)]
+                name = f"Patient {index}"
+                ID = f"ID {index}"
+                self.obs = f"Observer {index}"
+                self.df_st = self.df_st.rename_axis(f'Irradiation Event X-Ray Data of {name}')
+            else:
+                self.df_st = None
+            if self.all_data_fl:
+                self.df_fl = pd.DataFrame(self.all_data_fl)
+                self.df_fl.index = [f"Event {i + 1}" for i in range(ev_fl)]
+                name = f"Patient {index}"
+                ID = f"ID {index}"
+                self.obs = f"Observer {index}"
+                self.df_fl = self.df_fl.rename_axis(f'Irradiation Event X-Ray Data of {name}')
+            else:
+                self.df_fl = None
             self.data_total = {"Patient ID": ID, "Dose Area Product Total (Gym\u00b2)": self.total[0],
                                "Dose (RP) Total (Gy)":self.total[1],"Fluoro Dose Area Product Total (Gym\u00b2)":self.total[2],
                                             "Fluoro Dose (RP) Total (Gy)":self.total[3],	"Total Fluoro Time (s)":self.time[0],"Acquisition Dose Area Product Total (Gym\u00b2)":self.total[4],
@@ -390,8 +426,7 @@ class make_excel ():
                              'Pulse Width (ms)': ["N/A"], 'Exposure (uA.s)': ["N/A"],
                              'Collimated Field Area (m\u00b2)': ["N/A"], 'Collimated Field Height (mm)': ["N/A"],
                              'Collimated Field Width (mm)': ["N/A"], 'Distance Source to Detector (mm)': ["N/A"]}
-            self.data_total = {"Patient ID": ["N/A"], "Manufacturer": ["N/A"], "Content Date": ["N/A"],
-                               "Person Observer Name": ["N/A"], "Dose Area Product Total (Gym\u00b2)": ["N/A"],
+            self.data_total = {"Patient ID": ["N/A"], "Dose Area Product Total (Gym\u00b2)": ["N/A"],
                                "Dose (RP) Total (Gy)": ["N/A"],
                                "Fluoro Dose Area Product Total (Gym\u00b2)": ["N/A"],
                                "Fluoro Dose (RP) Total (Gy)": ["N/A"], "Total Fluoro Time (s)": ["N/A"],
@@ -399,17 +434,20 @@ class make_excel ():
                                "Acquisition Dose (RP) Total (Gy)": ["N/A"],
                                "Reference Point Definition (cm)": ["N/A"],
                                "Total Acquisition Time (s)": ["N/A"]}
+
             self.individual = {" Patient ID": ["N/A"], "Gender": ["N/A"], "Age (years)": ["N/A"], "Study Type": ["N/A"],
                                "Manufacturer": ["N/A"], "Content Date": ["N/A"],
                                "Content Time": ["N/A"], "Person Observer Name": ["N/A"]}
             name = f"Patient {index}"
             self.dft = pd.DataFrame(self.data_total, index=[name])
-            self.df = pd.DataFrame(self.all_data)
+            self.df_st = pd.DataFrame(self.all_data)
+            self.df_fl = pd.DataFrame(self.all_data)
             self.dfin = pd.DataFrame(self.individual, index=[name])
-        return self.df, self.dft,self.individual,self.dfin, self.person_data, self.name_id[1], self.name_id[2]
+
+        return self.df_st, self.df_fl, self.dft,self.individual,self.dfin, self.person_data, self.name_id[1], self.name_id[2]
 
     def get_dataframes(self):
-        return self.df, self.dft, self.dfper, self.name_id[1], self.name_id[2]
+        return self.df_st,self.df_fl, self.dft, self.dfper, self.name_id[1], self.name_id[2]
 
 import re
 
