@@ -187,19 +187,19 @@ class make_excelp ():
             self.df = self.df.rename(index={i: "Event {0}".format(i+1)})
         self.df = self.df.rename_axis('Irradiation Event X-Ray Data of '+ f"Patient {index}") #self.capname[1]+" "+self.name[1])
 
-        self.data_total = {"Patient ID": f"ID {index}", "Dose Area Product Total (Gym\u00b2)": self.total[0],
+        self.data_total = {"Patient ID": f"Patient ID {index}", "Dose Area Product Total (Gym\u00b2)": self.total[0],
                            "Dose (RP) Total (Gy)":self.total[1],"Fluoro Dose Area Product Total (Gym\u00b2)":self.total[2],"Fluoro Dose (RP) Total (Gy)":self.total[3],
                            "Total Fluoro Time (s)":self.total[4],"Acquisition Dose Area Product Total (Gym\u00b2)":self.total[5],
                             "Acquisition Dose (RP) Total (Gy)":self.total[6],	"Total Acquisition Time (s)":self.total[7],"Reference Point Definition (mm)":self.total[8]}
         self.dft = pd.DataFrame(self.data_total, index=[f"Patient {index}"])
         self.dft = self.dft.rename_axis('Patient Name')
 
-        self.person_data = [self.capname[1]+" "+self.name[1],f"ID {index}",self.sex, self.age,
+        self.person_data = [f"Patient {index}",f"Patient ID {index}",self.sex, self.age,
                             self.study, self.manufacturer[0],self.content[1],self.contime,self.observer[0],self.events]
 
         self.dfper = pd.DataFrame(self.person_data, index=['Patient Name', 'Patient ID','Gender','Age (years)', 'Study Type', 'Manufacturer', 'Content Time', 'Content Date', 'Person Observer Name',
                                          'Number of irradiation events'], columns=[""])
-        self.individual = {" Patient ID": self.name_id[0], "Gender": self.sex, "Age (years)": self.age, "Study Type": self.study,
+        self.individual = {" Patient ID": f"Patient ID {index}", "Gender": self.sex, "Age (years)": self.age, "Study Type": self.study,
                            "Manufacturer": self.manufacturer[0], "Content Date": self.content[1],
                            "Content Time": self.contime, "Person Observer Name": "Ν/Α"}
         self.dfin = pd.DataFrame(self.individual, index=[f"Patient {index}"])

@@ -185,8 +185,8 @@ class make_excel ():
                     self.pr [n] = ex_data[i+1]
                 else:
                     self.pr [n] = ex_data [i] #Pulse Rate (pulse/s)
-            elif re.match(r"sKVP:\d|\dKVP:\d|\wKVP:\d|KVP:|sKVP:|\dKVP:|\wKVP:", ex_data[i]):
-                if ex_data[i] == "sKVP:" or ex_data[i] == "KVP:" or re.match(r"\wKVP:|\dKVP:", ex_data[i]):
+            elif re.match(r"sKVP:\d|\dKVP:\d|KVP:|sKVP:|\wKVP:\d", ex_data[i]):
+                if ex_data[i] == "sKVP:" or ex_data == "KVP:":
                     self.kvp[n] = ex_data[i + 1]
                 else:
                     self.kvp[n] = ex_data[i]  # KVP
@@ -259,8 +259,8 @@ class make_excel ():
             self.study = ""
             for i in range(indexs+1,len(self.name)):
                 self.study = self.study+" "+self.name[i]
-            self.study = re.sub(r'#\d+\)Study:', '', self.study)
-            self.study =self.study.replace("^", " ")
+            self.study = re.sub(r'#\w+\)Study:', '', self.study)
+            self.study =self.study.replace("^", " ").replace('#FH323719)Study:','')
             self.sex = self.sex.replace('(','').replace(',','')
             print("Study:", self.study)
             self.name_id = [s.replace('Patient:', '').replace(')Study:Ortho/TraumaSeries:Radiation', '').replace('#', '').replace(',', '')
@@ -379,7 +379,7 @@ class make_excel ():
                 self.df_st = pd.DataFrame(self.all_data_st)
                 self.df_st.index = [f"Event {i + 1}" for i in range(ev_st)]
                 name = f"Patient {index}"
-                ID = f"ID {index}"
+                ID = f"Patient ID {index}"
                 self.obs = f"Observer {index}"
                 self.df_st = self.df_st.rename_axis(f'Irradiation Event X-Ray Data of {name}')
             else:
@@ -388,7 +388,7 @@ class make_excel ():
                 self.df_fl = pd.DataFrame(self.all_data_fl)
                 self.df_fl.index = [f"Event {i + 1}" for i in range(ev_fl)]
                 name = f"Patient {index}"
-                ID = f"ID {index}"
+                ID = f"Patient ID {index}"
                 self.obs = f"Observer {index}"
                 self.df_fl = self.df_fl.rename_axis(f'Irradiation Event X-Ray Data of {name}')
             else:
@@ -401,7 +401,7 @@ class make_excel ():
             self.dft = pd.DataFrame(self.data_total, index=[name])
             self.dft = self.dft.rename_axis('Patient Name')
 
-            self.person_data = [self.name_id[0]+" "+self.name_id[1],self.name_id[2],self.sex, self.age, self.study, self.manufacturer,
+            self.person_data = [name,ID,self.sex, self.age, self.study, self.manufacturer,
                                 self.content,self.contime, self.obs ,self.events+1]
 
             self.dfper = pd.DataFrame(self.person_data, index=['Patient Name', 'Patient ID','Gender','Age (years)', 'Study Type', 'Manufacturer', 'Content Time', 'Content Date', 'Person Observer Name',
@@ -438,12 +438,14 @@ class make_excel ():
                                "Manufacturer": ["N/A"], "Content Date": ["N/A"],
                                "Content Time": ["N/A"], "Person Observer Name": ["N/A"]}
             name = f"Patient {index}"
+            ev_st = None
+            ev_fl = None
             self.dft = pd.DataFrame(self.data_total, index=[name])
             self.df_st = pd.DataFrame(self.all_data)
             self.df_fl = pd.DataFrame(self.all_data)
             self.dfin = pd.DataFrame(self.individual, index=[name])
 
-        return self.df_st, self.df_fl, self.dft,self.individual,self.dfin, self.person_data, self.name_id[1], self.name_id[2]
+        return self.df_st, self.df_fl, self.dft,self.individual,self.dfin, self.person_data, ev_st, ev_fl
 
     def get_dataframes(self):
         return self.df_st,self.df_fl, self.dft, self.dfper, self.name_id[1], self.name_id[2]

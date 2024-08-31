@@ -28,10 +28,11 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for pdf_file in pdf_files:
         data = make_excel()
         df, dft, indiv, dfin, person, name_id1, name_id2 = data.startpro(f"{pdf_file.file_path}",index)
-
+        df.replace(0, "empty", inplace=True)
+        dft.replace(0, "empty", inplace=True)
         sheet_name_df = f"Patient {index}"
         person[0] = f"Patient {index}"
-        person[1] = f"ID {index}"
+        person[1] = f"Patient ID {index}"
         person[-2] = f"Observer {index}"
         print (person[0])
         dfper = pd.DataFrame(person,

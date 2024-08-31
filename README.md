@@ -10,7 +10,8 @@ Executable files for different C-Arms and DICOM are available for download:
 - Siemens Axiom: [Export_Axiom.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/Export_Axiom.exe)
 - Siemens Cios Alpha: [Export_Cios.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/Export_Cios.exe)
 - Philips BV Pulsera: [Export_Philips.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/Export_Philips.exe)
-- DICOM: [export_dicom.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/export_dicom.exe)
+- Dose Report DICOM: [Exp_RS.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.2/Exp_RS.exe)
+- Diagnostic DICOM: [export_dicom.exe](https://github.com/Shiramis/RDSR-to-Excel/releases/download/v1.0.0/export_dicom.exe)
 
   
 1. Download the appropriate executable for your needs from the releases section.
@@ -34,6 +35,7 @@ Executable files for different C-Arms and DICOM are available for download:
 ## Dependencies
 
 Ensure you have the following Python packages installed:
+- `pydicom`
 - `numpy`
 - `PyPDF2`
 - `datetime`

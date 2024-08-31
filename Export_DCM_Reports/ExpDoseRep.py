@@ -97,292 +97,116 @@ def extract_data(dicom_data):
     ds_todet = []
 
     def search_sequence(sequence):
+        global count  # Ensure the 'count' variable is accessible globally
+        count = False  # Initialize 'count' at the start of the sequence search
+
         for item in sequence:
-            # Check if the item has the Concept Name Code Sequence for 'Dose Area Product'
+            # Check if the item has the Concept Name Code Sequence (0040,A043)
             if (0x0040, 0xA043) in item:
                 concept_name_code_sequence = item[(0x0040, 0xA043)].value
-                if concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Dose Area Product Total':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            DAPtotal.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Dose (RP) Total':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            RPt.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Distance Source to Reference Point':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            dstrp.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Fluoro Dose Area Product Total':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            fDAPt.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Fluoro Dose (RP) Total':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            fRPt.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Total Fluoro Time':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            tftime.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Acquisition Dose Area Product Total':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            aDAPt.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Acquisition Dose (RP) Total':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if len(measured_value_sequence) > 0 and (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            aRPt.append(float(numeric_value))
-                        else:
-                            aRPt.append('empty')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Irradiation Event Type':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA168) in item:
-                        concept_code_sequence = item[(0x0040, 0xA168)].value
-                        if (0x0008, 0x0104) in concept_code_sequence[0]:
-                            refer = concept_code_sequence[0][(0x0008, 0x0104)].value
-                            event_type.append(refer)
-                        else:
-                            event_type.append('N/A')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Reference Point Definition':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA168) in item:
-                        concept_code_sequence = item[(0x0040, 0xA168)].value
-                        if (0x0008, 0x0104) in concept_code_sequence[0]:
-                            refer = concept_code_sequence[0][(0x0008, 0x0104)].value
-                            rpd.append(refer)
-                        else:
-                            rpd.append('N/A')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Total Acquisition Time':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            tatime.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Dose Area Product':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            DAP.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Dose (RP)':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            drp.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Positioner Primary Angle':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            primang.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Positioner Secondary Angle':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            secang.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'X-Ray Filter Type':
-                    # Check for the Concept Code Sequence tag (0040, A168) in the current item
-                    if (0x0040, 0xA168) in item:
-                        concept_code_sequence = item[(0x0040, 0xA168)].value
-                        if (0x0008, 0x0104) in concept_code_sequence[0]:
-                            # Extract the filter type (Code Meaning) as a string
-                            filter_type = concept_code_sequence[0][(0x0008, 0x0104)].value
-                            xrayfiltype.append(filter_type)
-                            if filter_type == 'No filter':
-                                xraymat.append('N/A')
-                                thicmax.append('N/A')
-                                thicmin.append('N/A')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'X-Ray Filter Material':
-                    if (0x0040, 0xA168) in item:
-                        concept_code_sequence = item[(0x0040, 0xA168)].value
-                        if (0x0008, 0x0104) in concept_code_sequence[0]:
-                            # Extract the filter type (Code Meaning) as a string
-                            material = concept_code_sequence[0][(0x0008, 0x0104)].value
-                            xraymat.append(material)
-                        else:
-                            xraymat.append('N/A')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'X-Ray Filter Thickness Maximum':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            thicmax.append(float(numeric_value))
-                        else:
-                            thicmax.append('N.A')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'X-Ray Filter Thickness Minimum':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            thicmin.append(float(numeric_value))
-                        else:
-                            thicmin.append('N.A')
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Pulse Rate':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            pulse_rate.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Number of Pulses':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            numb_pulses.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Irradiation Duration':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            if count is not True:
-                                irrad_dur.append(float(numeric_value))
-                                count = True
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'KVP':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            KVP.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'X-Ray Tube Current':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            current.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Exposure Time':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            exp_time.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Pulse Width':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            pulse_width.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Exposure':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            exposure.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Collimated Field Area':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            cfield_area.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Collimated Field Height':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            cfield_height.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Collimated Field Width':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            cfield_width.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Distance Source to Isocenter':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            ds_toiso.append(float(numeric_value))
-                elif concept_name_code_sequence[0][(0x0008, 0x0104)].value == 'Distance Source to Detector':
-                    # Access the Measured Value Sequence
-                    if (0x0040, 0xA300) in item:
-                        measured_value_sequence = item[(0x0040, 0xA300)].value
-                        if (0x0040, 0xA30A) in measured_value_sequence[0]:
-                            # Extract the Numeric Value
-                            numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
-                            ds_todet.append(float(numeric_value))
+                code_meaning = concept_name_code_sequence[0].get((0x0008, 0x0104), None)
+                if code_meaning:
+                    code_meaning_value = code_meaning.value
+                    if code_meaning_value == 'Dose Area Product Total':
+                        extract_numeric_value(item, (0x0040, 0xA300), DAPtotal)
+                    elif code_meaning_value == 'Dose (RP) Total':
+                        extract_numeric_value(item, (0x0040, 0xA300), RPt)
+                    elif code_meaning_value == 'Distance Source to Reference Point':
+                        extract_numeric_value(item, (0x0040, 0xA300), dstrp)
+                    elif code_meaning_value == 'Fluoro Dose Area Product Total':
+                        extract_numeric_value(item, (0x0040, 0xA300), fDAPt)
+                    elif code_meaning_value == 'Fluoro Dose (RP) Total':
+                        extract_numeric_value(item, (0x0040, 0xA300), fRPt)
+                    elif code_meaning_value == 'Total Fluoro Time':
+                        extract_numeric_value(item, (0x0040, 0xA300), tftime)
+                    elif code_meaning_value == 'Acquisition Dose Area Product Total':
+                        extract_numeric_value(item, (0x0040, 0xA300), aDAPt)
+                    elif code_meaning_value == 'Acquisition Dose (RP) Total':
+                        extract_numeric_value(item, (0x0040, 0xA300), aRPt, allow_empty=True)
+                    elif code_meaning_value == 'Irradiation Event Type':
+                        extract_concept_code(item, (0x0040, 0xA168), event_type)
+                    elif code_meaning_value == 'Reference Point Definition':
+                        extract_concept_code(item, (0x0040, 0xA168), rpd)
+                    elif code_meaning_value == 'Total Acquisition Time':
+                        extract_numeric_value(item, (0x0040, 0xA300), tatime)
+                    elif code_meaning_value == 'Dose Area Product':
+                        extract_numeric_value(item, (0x0040, 0xA300), DAP)
+                    elif code_meaning_value == 'Dose (RP)':
+                        extract_numeric_value(item, (0x0040, 0xA300), drp)
+                    elif code_meaning_value == 'Positioner Primary Angle':
+                        extract_numeric_value(item, (0x0040, 0xA300), primang)
+                    elif code_meaning_value == 'Positioner Secondary Angle':
+                        extract_numeric_value(item, (0x0040, 0xA300), secang)
+                    elif code_meaning_value == 'X-Ray Filter Type':
+                        extract_concept_code(item, (0x0040, 0xA168), xrayfiltype, filter_check=True)
+                    elif code_meaning_value == 'X-Ray Filter Material':
+                        extract_concept_code(item, (0x0040, 0xA168), xraymat)
+                    elif code_meaning_value == 'X-Ray Filter Thickness Maximum':
+                        extract_numeric_value(item, (0x0040, 0xA300), thicmax, allow_empty=True)
+                    elif code_meaning_value == 'X-Ray Filter Thickness Minimum':
+                        extract_numeric_value(item, (0x0040, 0xA300), thicmin, allow_empty=True)
+                    elif code_meaning_value == 'Pulse Rate':
+                        extract_numeric_value(item, (0x0040, 0xA300), pulse_rate)
+                    elif code_meaning_value == 'Number of Pulses':
+                        extract_numeric_value(item, (0x0040, 0xA300), numb_pulses)
+                    elif code_meaning_value == 'Irradiation Duration':
+                        if not count:
+                            extract_numeric_value(item, (0x0040, 0xA300), irrad_dur)
+                            count = True
+                    elif code_meaning_value == 'KVP':
+                        extract_numeric_value(item, (0x0040, 0xA300), KVP)
+                    elif code_meaning_value == 'X-Ray Tube Current':
+                        extract_numeric_value(item, (0x0040, 0xA300), current)
+                    elif code_meaning_value == 'Exposure Time':
+                        extract_numeric_value(item, (0x0040, 0xA300), exp_time)
+                    elif code_meaning_value == 'Pulse Width':
+                        extract_numeric_value(item, (0x0040, 0xA300), pulse_width)
+                    elif code_meaning_value == 'Exposure':
+                        extract_numeric_value(item, (0x0040, 0xA300), exposure)
+                    elif code_meaning_value == 'Collimated Field Area':
+                        extract_numeric_value(item, (0x0040, 0xA300), cfield_area)
+                    elif code_meaning_value == 'Collimated Field Height':
+                        extract_numeric_value(item, (0x0040, 0xA300), cfield_height)
+                    elif code_meaning_value == 'Collimated Field Width':
+                        extract_numeric_value(item, (0x0040, 0xA300), cfield_width)
+                    elif code_meaning_value == 'Distance Source to Isocenter':
+                        extract_numeric_value(item, (0x0040, 0xA300), ds_toiso)
+                    elif code_meaning_value == 'Distance Source to Detector':
+                        extract_numeric_value(item, (0x0040, 0xA300), ds_todet)
+
             # Recursively search within nested sequences
             if (0x0040, 0xA730) in item:
                 search_sequence(item[(0x0040, 0xA730)].value)
-                count = False
 
+    # Function to extract numeric value from Measured Value Sequence
+    def extract_numeric_value(item, tag, target_list, allow_empty=False):
+        if tag in item:
+            measured_value_sequence = item[tag].value
+            if measured_value_sequence and (0x0040, 0xA30A) in measured_value_sequence[0]:
+                numeric_value = measured_value_sequence[0][(0x0040, 0xA30A)].value
+                target_list.append(float(numeric_value))
+            elif allow_empty:
+                target_list.append('empty')
+            else:
+                target_list.append("N/A")
+
+    # Function to extract code value from Concept Code Sequence
+    def extract_concept_code(item, tag, target_list, filter_check=False):
+        if tag in item:
+            concept_code_sequence = item[tag].value
+            if concept_code_sequence and (0x0008, 0x0104) in concept_code_sequence[0]:
+                code_value = concept_code_sequence[0][(0x0008, 0x0104)].value
+                target_list.append(code_value)
+                if filter_check and code_value == 'No filter':
+                    xraymat.append('N/A')
+                    thicmax.append('N/A')
+                    thicmin.append('N/A')
+            else:
+                target_list.append('N/A')
 
     # Start searching from the main sequence
     if (0x0040, 0xA730) in dicom_data:
         search_sequence(dicom_data[(0x0040, 0xA730)].value)
-
-
     filttype1 = []
     mat1 = []
     tmin1 = []
@@ -713,13 +537,17 @@ coun = 0
 d = {}
 total = []
 info = []
+nst =0
+nfl =0
+
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for file in dicom_files:
         file_path = os.path.join(folder_path, file)
 
         df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type = read_dicom_files(file_path,rsname)
+        coun += 1
         if df_fl is not None and dfper_fl is not None:
-            coun += 1
+            nfl += 1
             df_fl.replace(0, "empty", inplace=True)
             for i in range(len(event_type)):
                 if event_type[i] == 'Fluoroscopy':
@@ -737,11 +565,11 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
             df2_fl.to_excel(writer, sheet_name=sheet_name_fl, header=False)
             df1_fl.to_excel(writer, sheet_name=sheet_name_fl, startrow=start_row_df_fl)
 
-            d[f"sheet {coun-1}"] = sheet_name_fl
-            d[f"max_row {coun-1}"] = max(start_row_df_fl + len(df_fl), len(dfper_fl))
-            d[f"max_col {coun-1}"] = len(df_fl.columns) + 1
+            d[f"sheetfl {nfl - 1}"] = sheet_name_fl
+            d[f"max_rowfl {nfl - 1}"] = max(start_row_df_fl + len(df_fl), len(dfper_fl))
+            d[f"max_colfl {nfl - 1}"] = len(df_fl.columns) + 1
         if df_st is not None and dfper_st is not None:
-            coun += 1
+            nst += 1
             df_st.replace(0, "empty", inplace=True)
             sheet_name_st = "DSA-"+str(pname) if pname else "Sheet1"
             sheet_name_st = sanitize_sheet_name(sheet_name_st)
@@ -754,16 +582,17 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
             df2_st.to_excel(writer, sheet_name=sheet_name_st, header=False)
             df1_st.to_excel(writer, sheet_name=sheet_name_st, startrow=start_row_df_st)
 
-            d[f"sheet {coun-1}"] = sheet_name_st
-            d[f"max_row {coun-1}"] = max(start_row_df_st + len(df_st), len(dfper_st))
-            d[f"max_col {coun-1}"] = len(df_st.columns) + 1
+            d[f"sheetst {nst - 1}"] = sheet_name_st
+            d[f"max_rowst {nst - 1}"] = max(start_row_df_st + len(df_st), len(dfper_st))
+            d[f"max_colst {nst - 1}"] = len(df_st.columns) + 1
+
         total.append(dftotal)
         info.append(dfinfo)
     if total:
         # Concatenate all the DataFrames in the total list
         dft = pd.concat(total, axis=0)
         dfi = pd.concat(info, axis = 0)
-
+        dft.replace(0, "empty", inplace=True)
         dft.columns = pd.Index(
             [f'{col}_{i}' if dft.columns.duplicated()[i] else col for i, col in enumerate(dft.columns)])
         dft.index = pd.Index([f'{idx}_{i}' if dft.index.duplicated()[i] else idx for i, idx in enumerate(dft.index)])
@@ -781,21 +610,36 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
 
 wb = openpyxl.load_workbook(output_directory)
 
-
-for i in range(0, coun):
-    sheet = wb[d[f"sheet {i}"]]
-    max_row = d[f"max_row {i}"]
-    max_col = d[f"max_col {i}"]
-    if df_st:
-        start_row_df = start_row_df_st
-    else:
-        start_row_df = start_row_df_fl
-    sheet.row_dimensions[start_row_df + 1].height = 31
-    for row in range(start_row_df + 1, max_row + 2):
-        for col in range(1, max_col + 1):
-            cell = sheet.cell(row=row, column=col)
-            cell.alignment = openpyxl.styles.Alignment(wrap_text=True, horizontal='left')
-    auto_adjust_column_widths(sheet, start_row_df, max_row, max_col)
+if nst != 0:
+    for i in range(0, nst):
+        sheet = wb[d[f"sheetst {i}"]]
+        max_row = d[f"max_rowst {i}"]
+        max_col = d[f"max_colst {i}"]
+        if df_st:
+            start_row_df = start_row_df_st
+        else:
+            start_row_df = start_row_df_fl
+        sheet.row_dimensions[start_row_df + 1].height = 31
+        for row in range(start_row_df + 1, max_row + 2):
+            for col in range(1, max_col + 1):
+                cell = sheet.cell(row=row, column=col)
+                cell.alignment = openpyxl.styles.Alignment(wrap_text=True, horizontal='left')
+        auto_adjust_column_widths(sheet, start_row_df, max_row, max_col)
+if nfl != 0:
+    for i in range(0, nfl):
+        sheet = wb[d[f"sheetfl {i}"]]
+        max_row = d[f"max_rowfl {i}"]
+        max_col = d[f"max_colfl {i}"]
+        if df_st:
+            start_row_df = start_row_df_st
+        else:
+            start_row_df = start_row_df_fl
+        sheet.row_dimensions[start_row_df + 1].height = 31
+        for row in range(start_row_df + 1, max_row + 2):
+            for col in range(1, max_col + 1):
+                cell = sheet.cell(row=row, column=col)
+                cell.alignment = openpyxl.styles.Alignment(wrap_text=True, horizontal='left')
+        auto_adjust_column_widths(sheet, start_row_df, max_row, max_col)
 # Ensure at least one sheet is visible
 visible_sheets = [sheet for sheet in wb.sheetnames if wb[sheet].sheet_state == 'visible']
 if not visible_sheets:

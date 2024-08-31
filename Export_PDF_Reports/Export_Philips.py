@@ -29,10 +29,12 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
         data = make_excelp()
         df, dft, indiv, dfin, person, name_id = data.startpro(f"{pdf_file.file_path}", index)
 
+        df.replace(0, "empty", inplace=True)
+        dft.replace(0, "empty", inplace=True)
         sheet_name_df = f"Patient {index}"
         person[0] = f"Patient {index}"
-        person[1] = f"ID {index}"
-        person[-2] = "N/A"
+        person[1] = f"Patient ID {index}"
+        person[-2] = f"Observer {index}"
         dfper = pd.DataFrame(person,
                              index=['Patient Name', 'Patient ID','Gender','Age (years)', 'Study Type', 'Manufacturer',
                                          'Content Date', 'Content Time', 'Person Observer Name',

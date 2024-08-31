@@ -37,8 +37,9 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for pdf_file in pdf_files:
         data = make_excel()
 
-        df_st, df_fl, dft, indiv,dfin, person, name_id1, name_id2 = data.startpro(pdf_file,index)
+        df_st, df_fl, dft, indiv,dfin, person, evst, evfl = data.startpro(pdf_file,index)
 
+        dft.replace(0, "empty", inplace=True)
         dfper = pd.DataFrame(person,
                              index=['Patient Name', 'Patient ID', 'Gender', 'Age (years)', 'Study Type', 'Manufacturer',
                                     'Content Date', 'Content Time', 'Person Observer Name',
@@ -47,13 +48,15 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
         start_row_df = start_row_dfper + len(dfper) + 2
         if df_st is not None and not df_st.empty:
             nst += 1
+            dfper.loc['Number of irradiation events'] = evst
+            df_st.replace(0, "empty", inplace=True)
             sheet_name_df_st = f"DSA-Patient {index}"
             df_styled = df_st.style.set_properties(**{'text-align': 'left', 'white-space': 'wrap'})
             df1_st = df_styled.set_properties(**{'border': '1px solid black', 'border-collapse': 'collapse'})
             df1_st.to_excel(writer, sheet_name=sheet_name_df_st, startrow=start_row_df)
 
             person[0] = f"Patient {index}"
-            person[1] = f"ID {index}"
+            person[1] = f"Patient ID {index}"
             person[-2] = f"Observer {index}"
 
             dfper_styled = dfper.style.set_properties(**{'text-align': 'left', 'white-space': 'wrap'})
@@ -62,13 +65,15 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
 
         if df_fl is not None and not df_fl.empty:
             nfl += 1
+            dfper.loc['Number of irradiation events'] = evfl
+            df_fl.replace(0, "empty", inplace=True)
             sheet_name_df_fl = f"Fluoro-Patient {index}"
             df_styled = df_fl.style.set_properties(**{'text-align': 'left', 'white-space': 'wrap'})
             df1_fl = df_styled.set_properties(**{'border': '1px solid black', 'border-collapse': 'collapse'})
             df1_fl.to_excel(writer, sheet_name=sheet_name_df_fl, startrow=start_row_df)
 
             person[0] = f"Patient {index}"
-            person[1] = f"ID {index}"
+            person[1] = f"Patient ID {index}"
             person[-2] = f"Observer {index}"
 
             dfper_styled = dfper.style.set_properties(**{'text-align': 'left', 'white-space': 'wrap'})

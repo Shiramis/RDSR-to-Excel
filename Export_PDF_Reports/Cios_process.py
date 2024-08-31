@@ -356,7 +356,7 @@ class make_excel ():
             #name = self.name_id[0]+" "+self.name_id[1]
             name = f"Patient {index}"
             #ID = self.name_id[2]
-            ID = f"ID {index}"
+            ID = f"Patient ID {index}"
             self.obs = f"Observer {index}"
 
             self.df = self.df.rename_axis('Irradiation Event X-Ray Data of '+ name )
@@ -367,12 +367,12 @@ class make_excel ():
             self.dft = pd.DataFrame(self.data_total, index=[name])
             self.dft = self.dft.rename_axis('Patient Name')
 
-            self.person_data = [self.name_id[0]+" "+self.name_id[1],self.name_id[2],self.sex, self.age, self.study, self.manufacturer,
+            self.person_data = [name,ID,self.sex, self.age, self.study, self.manufacturer,
                                 self.content,self.contime, self.obs ,self.events+1]
 
             self.dfper = pd.DataFrame(self.person_data, index=['Patient Name', 'Patient ID','Gender','Age (years)', 'Study Type', 'Manufacturer', 'Content Time', 'Content Date', 'Person Observer Name',
                                          'Number of irradiation events'], columns=[""])
-            self.individual = {" Patient ID": ID,"Gender": self.sex,"Age (years)":self.age,"Study Type":self.study,
+            self.individual = {"Patient ID": f"Patient ID {index}","Gender": self.sex,"Age (years)":self.age,"Study Type":self.study,
                                "Manufacturer": self.manufacturer, "Content Date": self.content, "Content Time": self.contime,
                                    "Person Observer Name": self.obs}
             self.dfin = pd.DataFrame(self.individual, index=[name])
