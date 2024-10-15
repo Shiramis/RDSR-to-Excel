@@ -30,4 +30,5 @@ Executable files for different C-Arms and DICOM are available for download:
 - `Cios_proccess.py`: Contains the processing functions for Siemens Cios Alpha.
 - `Export_Philips.py`: Script for processing Philips BV Pulsera PDF files and exporting dose data to Excel.
 - `Philips_proccess.py`: Contains the processing functions for Philips BV Pulsera.
+- `ExpDoseRep.py`: Script for processing DICOM Dose Report files from patient folders and exporting dose data to Excel.
 - `export_dicom.py`: Script for processing DICOM files and exporting dose data to Excel.
