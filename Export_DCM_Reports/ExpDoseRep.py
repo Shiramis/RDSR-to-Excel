@@ -285,7 +285,7 @@ def read_dicom_files(folder_path, rsname):
     info_dict = {}
     data_all_st = []
     data_all_fl = []
-    dicom_files = [file for file in os.listdir(folder_path) if file.endswith('')]  # Add proper file extensions if needed
+    dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
     first_file_processed = False
     file_counts = 0
     series_counts = 0
@@ -407,14 +407,15 @@ def read_dicom_files(folder_path, rsname):
                 data_total.append({"Patient ID": dicom_data.get('PatientID', 'N/A'),
                                    "Manufacturer": dicom_data.get('Manufacturer', 'N/A'), "Content Date": date_str,
                                    'Performing Physician': physician,
-                                   'Dose Area Product Total (μGym²)': DAPtotal[0], 'Dose (RP) Total (mGy)': RPt[0],
-                                   'Fluoro Dose Area Product Total (μGym²)': fDAPt[0],
-                                   "Fluoro Dose (RP) Total (Gy)": fRPt[0],
-                                   "Total Fluoro Time (s)": tftime[0],
-                                   "Acquisition Dose Area Product Total (Gym²)": aDAPt[0],
-                                   "Acquisition Dose (RP) Total (Gy)": aRPt[0],
-                                   "Reference Point Definition (cm)": rpd[0],
-                                   "Total Acquisition Time (s)": tatime[0]})
+                                   'Dose Area Product Total (μGym²)': DAPtotal[0] if len(DAPtotal) > 0 else 'N/A',
+                    'Dose (RP) Total (mGy)': RPt[0] if len(RPt) > 0 else 'N/A',
+                    'Fluoro Dose Area Product Total (μGym²)': fDAPt[0] if len(fDAPt) > 0 else 'N/A',
+                    "Fluoro Dose (RP) Total (Gy)": fRPt[0] if len(fRPt) > 0 else 'N/A',
+                    "Total Fluoro Time (s)": tftime[0] if len(tftime) > 0 else 'N/A',
+                    "Acquisition Dose Area Product Total (Gym²)": aDAPt[0] if len(aDAPt) > 0 else 'N/A',
+                    "Acquisition Dose (RP) Total (Gy)": aRPt[0] if len(aRPt) > 0 else 'N/A',
+                    "Reference Point Definition (cm)": rpd[0] if len(rpd) > 0 else 'N/A',
+                    "Total Acquisition Time (s)": tatime[0] if len(tatime) > 0 else 'N/A'})
 
 
         else:
@@ -531,7 +532,7 @@ output_directory = sanitize_path(input(r"Write the path of the excel file: "))
 rsname = input (r'Write the series description of Radiation Dose Report: ')
 start_time = time.time()
 
-dicom_files = [file for file in os.listdir(folder_path) if file.endswith('')]  # Add proper file extensions if needed
+dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
 
 coun = 0
 d = {}
@@ -546,6 +547,7 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
 
         df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type = read_dicom_files(file_path,rsname)
         coun += 1
+        print(f"Process file:{coun}")
         if df_fl is not None and dfper_fl is not None:
             nfl += 1
             df_fl.replace(0, "empty", inplace=True)
@@ -615,7 +617,7 @@ if nst != 0:
         sheet = wb[d[f"sheetst {i}"]]
         max_row = d[f"max_rowst {i}"]
         max_col = d[f"max_colst {i}"]
-        if df_st:
+        if not df_st.empty:
             start_row_df = start_row_df_st
         else:
             start_row_df = start_row_df_fl
@@ -630,7 +632,7 @@ if nfl != 0:
         sheet = wb[d[f"sheetfl {i}"]]
         max_row = d[f"max_rowfl {i}"]
         max_col = d[f"max_colfl {i}"]
-        if df_st:
+        if not df_st.empty:
             start_row_df = start_row_df_st
         else:
             start_row_df = start_row_df_fl
@@ -664,8 +666,12 @@ for i, width in enumerate(column_widths, start=1):
     column_letter = get_column_letter(i)
     sheet2.column_dimensions[column_letter].width = width
 
-wb.move_sheet(sheet1,offset=-coun)
-wb.move_sheet(sheet2, offset=-coun-1)
+if nfl != 0 and nst != 0:
+    wb.move_sheet(sheet1,offset=-(nfl+nst))
+    wb.move_sheet(sheet2, offset=-(nfl+nst)-1)
+else:
+    wb.move_sheet(sheet1, offset=-coun)
+    wb.move_sheet(sheet2, offset=-coun - 1)
 wb.save(output_directory)
 end_time = time.time()
 elapsed_time = end_time - start_time
