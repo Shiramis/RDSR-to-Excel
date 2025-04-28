@@ -1,3 +1,5 @@
+import tkinter as tk
+from tkinter import filedialog
 import pydicom
 import os
 import pandas as pd
@@ -13,6 +15,7 @@ class DicomFile:
 
 def sanitize_path(path):
     return path.strip('"')
+
 def read_hex_to_decimal(dicom_data, tag):
     """Read a hexadecimal value from a DICOM tag and convert it to decimal."""
     if tag in dicom_data:
@@ -49,6 +52,7 @@ def read_hex_to_decimal(dicom_data, tag):
             return decimal_value
     else:
         return 'N/A'
+
 def extract_and_format_age(age_value):
     """Extract the numeric part of the age and format it."""
     if isinstance(age_value, str):
@@ -57,6 +61,7 @@ def extract_and_format_age(age_value):
             return int(numeric_part)
         else:
             raise ValueError(f"No numeric part found in value '{age_value}'")
+
 def sanitize_sheet_name(sheet_name):
     return "".join([c for c in sheet_name if c.isalnum() or c in [' ', '_', '-']]).strip()
 
@@ -279,7 +284,6 @@ def extract_data(dicom_data):
         numb_pulses, irrad_dur, KVP, current, exp_time, \
         pulse_width, exposure, cfield_area, cfield_height, cfield_width, ds_toiso, ds_todet,event_type, max_len
 
-
 def read_dicom_files(folder_path, rsname):
     data_total = []
     info_dict = {}
@@ -360,7 +364,8 @@ def read_dicom_files(folder_path, rsname):
                                             'Collimated Field Width (mm)': cfield_width[i],
                                             'Distance Source to Isocenter (mm)': ds_toiso[i],
                                             'Distance Source to Detector (mm)': ds_todet[i]})
-                if mat1[0] != 'N/A' and mat2[0] != 'N/A':
+                if mat1 and mat2 and mat1[0] != 'N/A' and mat2[0] != 'N/A':
+
                     data_all1 = []
                     data_all2 = []
                     if data_all_st:
@@ -405,8 +410,8 @@ def read_dicom_files(folder_path, rsname):
                         data_all_fl = data_all2
 
                 data_total.append({"Patient ID": dicom_data.get('PatientID', 'N/A'),
-                                   "Manufacturer": dicom_data.get('Manufacturer', 'N/A'), "Content Date": date_str,
-                                   'Performing Physician': physician,
+                                   "Manufacturer": dicom_data.get('Manufacturer', 'N/A'), "Content Date": dicom_data.get('StudyDate', 'N/A'),#date_str,
+                                   'Performing Physician': dicom_data.get('PerformingPhysicianName', 'N/A'),#physician,
                                    'Dose Area Product Total (μGym²)': DAPtotal[0] if len(DAPtotal) > 0 else 'N/A',
                     'Dose (RP) Total (mGy)': RPt[0] if len(RPt) > 0 else 'N/A',
                     'Fluoro Dose Area Product Total (μGym²)': fDAPt[0] if len(fDAPt) > 0 else 'N/A',
@@ -506,7 +511,6 @@ def read_dicom_files(folder_path, rsname):
         print("No valid DICOM files processed.")
         return None, None, None, None, None, None, None, None
 
-
 def auto_adjust_column_widths(sheet, start_row_df, max_row, max_col):
     column_widths = {}
 
@@ -527,9 +531,20 @@ def auto_adjust_column_widths(sheet, start_row_df, max_row, max_col):
     for col, width in column_widths.items():
         sheet.column_dimensions[get_column_letter(col)].width = width
 
-folder_path = sanitize_path(input(r'Write the path of the folder with DICOM DATA: '))
-output_directory = sanitize_path(input(r"Write the path of the excel file: "))
-rsname = input (r'Write the series description of Radiation Dose Report: ')
+# open a window
+root = tk.Tk()
+root.withdraw()
+# Select DICOM folder
+folder_path = filedialog.askdirectory(title="Select Folder with DICOM DATA")
+folder_path = sanitize_path(folder_path)
+# Select output folder for the new Excel file
+output_folder = filedialog.askdirectory(title="Select Folder to Save the Excel File")
+output_folder = sanitize_path(output_folder)
+# Automatically create an Excel file path
+timestamp = time.strftime("%Y-%m-%d_%H%M%S")
+output_filename = f"Dose_Report_{timestamp}.xlsx"
+output_directory = os.path.join(output_folder, output_filename)
+
 start_time = time.time()
 
 dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
