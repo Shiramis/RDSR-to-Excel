@@ -351,8 +351,7 @@ class make_excel ():
                 self.all_data[col] += [np.nan] * (max_length - len(self.all_data[col]))
 
             self.df = pd.DataFrame(self.all_data)
-            for i in range(0,self.events+1):
-                self.df = self.df.rename(index={i: "Event {0}".format(i+1)})
+
             #name = self.name_id[0]+" "+self.name_id[1]
             name = f"Patient {index}"
             #ID = self.name_id[2]
@@ -377,6 +376,8 @@ class make_excel ():
                                    "Person Observer Name": self.obs}
             self.dfin = pd.DataFrame(self.individual, index=[name])
             self.dfin = self.dfin.rename_axis('Patient Name')
+            #--------
+            
         else:
             self.name_id = []
             self.name_id = ["N/A"]* 5

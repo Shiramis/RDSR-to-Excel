@@ -1,13 +1,12 @@
+import tkinter as tk
+from tkinter import filedialog
 import pydicom
 import os
 import pandas as pd
 import openpyxl
 from openpyxl.utils import get_column_letter
-from openpyxl.comments import Comment
 from datetime import datetime as dt
 import time
-import tkinter as tk
-from tkinter import filedialog
 
 class DicomFile:
     def __init__(self, filename, file_path):
@@ -67,40 +66,37 @@ def sanitize_sheet_name(sheet_name):
     return "".join([c for c in sheet_name if c.isalnum() or c in [' ', '_', '-']]).strip()
 
 def extract_data(dicom_data):
-    # ==Totals===
-    DAPtotal = []
-    RPt = []
-    dstrp = []
-    fDAPt = []
-    fRPt = []
-    tftime = []
-    aDAPt = []
-    aRPt = []
-    rpd = []
-    tatime = []
+    #==Totals===
+    DAPtotal = []  # Dose Area Product Total
+    RPt = []  # Dose (RP) Total
+    dstrp = []  # Distance Source to Reference Point
+    aDAPt = []  # Acquisition Dose Area Product Total
+    aRPt = []  # Acquisition Dose (RP) Total
+    rpd = []  # Reference Point Definition
+    tatime = []  # Total Acquisition Time
     # ===Events==
-    event_type = []
-    DAP = []
-    drp = []
-    primang = []
-    secang = []
-    xrayfiltype = []
-    xraymat = []
-    thicmax = []
-    thicmin = []
-    pulse_rate = []
-    numb_pulses = []
-    irrad_dur = []
-    KVP = []
-    current = []
-    exp_time = []
-    pulse_width = []
-    exposure = []
-    cfield_area = []
-    cfield_height = []
-    cfield_width = []
-    ds_toiso = []
-    ds_todet = []
+    event_type = []  # Irradiation Event Type
+    DAP = []  # Dose Area Product
+    drp = []  # Dose (RP)
+    primang = []  # Positioner Primary Angle
+    secang = []  # Positioner Secondary Angle
+    xrayfiltype = []  # X-Ray Filter Type
+    xraymat = []  # X-Ray Filter Material
+    thicmax = []  # X-Ray Filter Thickness Maximum
+    thicmin = []  # X-Ray Filter Thickness Minimum
+    pulse_rate = []  # Pulse Rate
+    numb_pulses = []  # Number of Pulses
+    irrad_dur = []  # Irradiation Duration
+    KVP = []  # KVp
+    current = []  # current (mA)
+    exp_time = []  # exposure time (ms)
+    pulse_width = []  # pulse width
+    exposure = []  # Exposure
+    cfield_area = []  # Collimated Field Area
+    cfield_height = []  # Collimated Field Height
+    cfield_width = []  # Collimated Field Width
+    ds_toiso = []  # Distance Source to Isocenter
+    ds_todet = []  # Distance Source to Detector
 
     def search_sequence(sequence):
         global count  # Ensure the 'count' variable is accessible globally
@@ -119,10 +115,6 @@ def extract_data(dicom_data):
                         extract_numeric_value(item, (0x0040, 0xA300), RPt)
                     elif code_meaning_value == 'Distance Source to Reference Point':
                         extract_numeric_value(item, (0x0040, 0xA300), dstrp)
-                    elif code_meaning_value == 'Fluoro Dose Area Product Total':
-                        extract_numeric_value(item, (0x0040, 0xA300), fDAPt)
-                    elif code_meaning_value == 'Fluoro Dose (RP) Total':
-                        extract_numeric_value(item, (0x0040, 0xA300), fRPt)
                     elif code_meaning_value == 'Total Fluoro Time':
                         extract_numeric_value(item, (0x0040, 0xA300), tftime)
                     elif code_meaning_value == 'Acquisition Dose Area Product Total':
@@ -235,121 +227,77 @@ def extract_data(dicom_data):
                 tmax2.append(thicmax[i - 1])
     if mat1 and mat2:
         max_len = max(len(lst) for lst in
-                      [DAP, drp, primang, secang, filttype1, mat1, tmin1, tmax1, filttype2, mat2, tmin2, tmax2,
-                       pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area,
-                       cfield_height, cfield_width, ds_toiso, ds_todet])
-    else:
-        max_len = max(len(lst) for lst in
-                      [DAP, drp, primang, secang, xrayfiltype, xraymat, thicmax, thicmin, pulse_rate, numb_pulses,
+                      [DAP, drp, primang, secang, filttype1,mat1,tmin1,tmax1,filttype2,mat2,tmin2,tmax2, pulse_rate, numb_pulses,
                        irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height,
-                       cfield_width, ds_toiso, ds_todet])
+                       cfield_width, ds_toiso, ds_todet, event_type])
+    else:
+
+        max_len = max(len(lst) for lst in
+                  [DAP, drp, primang, secang, xrayfiltype, xraymat, thicmax, thicmin, pulse_rate, numb_pulses,
+                   irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height, cfield_width,
+                   ds_toiso, ds_todet, event_type])
+
     # Function to pad lists with 'empty' so they all have the same length
     def pad_list(lst, max_len):
         return lst + ['N/A'] * (max_len - len(lst))
 
-    # Pad each list
-    DAP = pad_list(DAP, max_len)
-    drp = pad_list(drp, max_len)
-    primang = pad_list(primang, max_len)
-    secang = pad_list(secang, max_len)
-    xrayfiltype = pad_list(xrayfiltype, max_len)
-    xraymat = pad_list(xraymat, max_len)
-    thicmax = pad_list(thicmax, max_len)
-    thicmin = pad_list(thicmin, max_len)
-    filttype1 = pad_list(filttype1, max_len)
-    mat1 = pad_list(mat1, max_len)
-    tmax1 = pad_list(tmax1, max_len)
-    tmin1 = pad_list(tmin1, max_len)
-    filttype2 = pad_list(filttype2, max_len)
-    mat2 = pad_list(mat2, max_len)
-    tmax2 = pad_list(tmax2, max_len)
-    tmin2 = pad_list(tmin2, max_len)
-    pulse_rate = pad_list(pulse_rate, max_len)
-    numb_pulses = pad_list(numb_pulses, max_len)
-    irrad_dur = pad_list(irrad_dur, max_len)
-    KVP = pad_list(KVP, max_len)
-    current = pad_list(current, max_len)
-    exp_time = pad_list(exp_time, max_len)
-    pulse_width = pad_list(pulse_width, max_len)
-    exposure = pad_list(exposure, max_len)
-    cfield_area = pad_list(cfield_area, max_len)
-    cfield_height = pad_list(cfield_height, max_len)
-    cfield_width = pad_list(cfield_width, max_len)
-    ds_toiso = pad_list(ds_toiso, max_len)
-    ds_todet = pad_list(ds_todet, max_len)
+    lists_to_pad = [DAP, drp, primang, secang, xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmax1, tmin1,
+                    filttype2, mat2, tmax2, tmin2, pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time,
+                    pulse_width, exposure, cfield_area, cfield_height, cfield_width, ds_toiso, ds_todet]
+
+    # Pad all lists
+    lists_to_pad = [pad_list(lst, max_len) for lst in lists_to_pad]
+
+    # Unpack back
+    (DAP, drp, primang, secang, xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmax1, tmin1, filttype2, mat2,
+     tmax2, tmin2, pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area,
+     cfield_height, cfield_width, ds_toiso, ds_todet) = lists_to_pad
 
     return DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, \
         xrayfiltype,  xraymat, thicmax, thicmin,filttype1,mat1,tmin1,tmax1,filttype2,mat2,tmin2,tmax2, pulse_rate, \
         numb_pulses, irrad_dur, KVP, current, exp_time, \
-        pulse_width, exposure, cfield_area, cfield_height, cfield_width, ds_toiso, ds_todet, event_type, max_len
+        pulse_width, exposure, cfield_area, cfield_height, cfield_width, ds_toiso, ds_todet,event_type, max_len
 
-def read_dicom_files(folder_path, coun):
+def read_dicom_files(folder_path):
     data_total = []
     info_dict = {}
     data_all_st = []
     data_all_fl = []
-    event_type = []
     dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
     first_file_processed = False
     file_counts = 0
     series_counts = 0
-    events =0
+    sd = {}
+    events = 0
     dose_report_found = False
     for file in dicom_files:
         file_path = os.path.join(folder_path, file)
         file_counts += 1
         dicom_data = pydicom.dcmread(file_path)
-        
+
         sop_class_uid = dicom_data.get((0x0008, 0x0016), None)
 
         if sop_class_uid and sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.67":
 
-            DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, \
+            DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang,\
             xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmin1, tmax1, filttype2, mat2, tmin2, tmax2, \
             pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height, cfield_width, \
             ds_toiso, ds_todet, event_type, events = extract_data(dicom_data)
-
             dose_report_found = True
-
             ev_st = 0
             ev_fl = 0
-            for i in range(0, events):
-                if event_type[i] == 'Stationary Acquisition':
+            for i in range(0,events):
+                if event_type [i] == 'Stationary Acquisition':
                     ev_st += 1
-                    data_all_st.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
-                                        'Positioner Primary Angle (deg)': primang[i],
-                                        'Positioner Secondary Angle (deg)': secang[i],
-                                        'X-Ray Filter Type': xrayfiltype[i],
-                                        'X-Ray Filter Thickness Material': xraymat[i],
-                                        'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
-                                        'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
-                                        "Pulse Rate (pulse/s)": pulse_rate[i],
-                                        "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
-                                        'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
-                                        'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
-                                        'Collimated Field Area (m²)': cfield_area[i],
-                                        'Collimated Field Height (mm)': cfield_height[i],
-                                        'Collimated Field Width (mm)': cfield_width[i],
-                                        'Distance Source to Isocenter (mm)': ds_toiso[i],
-                                        'Distance Source to Detector (mm)': ds_todet[i]})
-                elif event_type[i] == 'Fluoroscopy':
-                    ev_fl += 1
-                    data_all_fl.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
-                                        'Positioner Primary Angle (deg)': primang[i],
-                                        'Positioner Secondary Angle (deg)': secang[i],
-                                        'X-Ray Filter Type': xrayfiltype[i],
-                                        'X-Ray Filter Thickness Material': xraymat[i],
-                                        'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
-                                        'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
-                                        "Pulse Rate (pulse/s)": pulse_rate[i],
-                                        "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
-                                        'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
-                                        'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
-                                        'Collimated Field Area (m²)': cfield_area[i],
-                                        'Collimated Field Height (mm)': cfield_height[i],
-                                        'Collimated Field Width (mm)': cfield_width[i],
-                                        'Distance Source to Isocenter (mm)': ds_toiso[i],
-                                        'Distance Source to Detector (mm)': ds_todet[i]})
+                    data_all_st.append({ "Dose Area Product (Gym²)": DAP[i],
+                                     "Dose (RP) (Gy)": drp[i],
+                                     'KVP': KVP[i],
+                                     'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
+                                     'Exposure (uA.s)': exposure[i],
+                                     'Collimated Field Area (m²)': cfield_area[i], 'Collimated Field Height (mm)': cfield_height[i],
+                                     'Collimated Field Width (mm)': cfield_width[i], 'Distance Source to Isocenter (mm)': ds_toiso[i],
+                                     'Distance Source to Detector (mm)': ds_todet[i]})
+
                 else:
                     data_all_fl.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
                                         'Positioner Primary Angle (deg)': primang[i],
@@ -367,7 +315,8 @@ def read_dicom_files(folder_path, coun):
                                         'Collimated Field Width (mm)': cfield_width[i],
                                         'Distance Source to Isocenter (mm)': ds_toiso[i],
                                         'Distance Source to Detector (mm)': ds_todet[i]})
-            if mat1[0] != 'N/A' and mat2[0] != 'N/A':
+            if mat1 and mat2 and mat1[0] != 'N/A' and mat2[0] != 'N/A':
+
                 data_all1 = []
                 data_all2 = []
                 if data_all_st:
@@ -411,11 +360,11 @@ def read_dicom_files(folder_path, coun):
                         data_all2.append(updated_item)
                     data_all_fl = data_all2
 
-            data_total.append({"Patient ID": f'Patient ID {coun}',
-                                "Manufacturer": dicom_data.get('Manufacturer', 'N/A'), "Content Date": date_str,
-                                'Performing Physician': physician,
-                                'Dose Area Product Total (Gym²)': DAPtotal[0] if len(DAPtotal) > 0 else 'N/A',
-                    'Dose (RP) Total (Gy)': RPt[0] if len(RPt) > 0 else 'N/A',
+                data_total.append({"Patient ID": dicom_data.get('PatientID', 'N/A'),
+                                   "Manufacturer": dicom_data.get('Manufacturer', 'N/A'), "Content Date": dicom_data.get('StudyDate', 'N/A'),#date_str,
+                                   'Performing Physician': dicom_data.get('PerformingPhysicianName', 'N/A'),#physician,
+                                   'Dose Area Product Total (μGym²)': DAPtotal[0] if len(DAPtotal) > 0 else 'N/A',
+                    'Dose (RP) Total (mGy)': RPt[0] if len(RPt) > 0 else 'N/A',
                     'Fluoro Dose Area Product Total (μGym²)': fDAPt[0] if len(fDAPt) > 0 else 'N/A',
                     "Fluoro Dose (RP) Total (Gy)": fRPt[0] if len(fRPt) > 0 else 'N/A',
                     "Total Fluoro Time (s)": tftime[0] if len(tftime) > 0 else 'N/A',
@@ -424,13 +373,16 @@ def read_dicom_files(folder_path, coun):
                     "Reference Point Definition (cm)": rpd[0] if len(rpd) > 0 else 'N/A',
                     "Total Acquisition Time (s)": tatime[0] if len(tatime) > 0 else 'N/A'})
 
+
         else:
             pass
         series_counts += 1
         if not first_file_processed:
-            physician = f"Physician {coun}"
-            pname = f'Patient {coun}'
-            info_dict = {'Patient Name': pname, 'Patient ID': f'Patient ID {coun}',
+            physician = dicom_data.get('PerformingPhysicianName', 'N/A')
+            if physician == '':
+                physician = 'N/A'
+            pname = dicom_data.get('PatientName', 'N/A')
+            info_dict = {'Patient Name': pname, 'Patient ID': dicom_data.get('PatientID', 'N/A'),
                 'Content Date': dicom_data.get('StudyDate', 'N/A'),
                 'Performing Physician': physician}
             psex = dicom_data[(0x0010, 0x0040)].value
@@ -440,6 +392,7 @@ def read_dicom_files(folder_path, coun):
             else:
                 psex = 'Male'
             first_file_processed = True
+
             study_date_str = dicom_data.get('StudyDate', 'N/A')
             if study_date_str != 'N/A':
                 content_date = dt.strptime(study_date_str, '%Y%m%d')
@@ -464,16 +417,16 @@ def read_dicom_files(folder_path, coun):
                     birth_date = dt.strptime(birth_date_str, '%Y%m%d')
                     age = content_date.year - birth_date.year - (
                                 (content_date.month, content_date.day) < (birth_date.month, birth_date.day))
+                    age_str = f"{age}Y"  # Format age as years (e.g., '45Y')
                 else:
-                    age = 'N/A'
+                    age_str = 'N/A'
 
-            infoplus = {'Patient Name': pname,'Patient ID': f'Patient ID {coun}',
+            infoplus = {'Patient Name': pname,'Patient ID': dicom_data.get('PatientID', 'N/A'),
             "Gender": psex,'Age (years)':age,'Study Description':dicom_data.get('StudyDescription', 'N/A'),
             "Manufacturer":dicom_data.get("Manufacturer", 'N/A'),'Content Date': date_str,'Content Time':time_str,
             'Performing Physician': physician}
     if not dose_report_found:
         print(f"No dose report found in folder {folder_path}")
-
     if first_file_processed:
         df_fl = None
         df_st = None
@@ -484,8 +437,8 @@ def read_dicom_files(folder_path, coun):
             df_fl = pd.DataFrame(data_all_fl)
             df_fl = df_fl.fillna('Ν/Α')
             df_fl = df_fl.rename_axis(f'Irradiation Event X-Ray Data of {pname}')
-            for i in range(0, ev_fl + 1):
-                df_fl = df_fl.rename(index={i: f"Event {i + 1}"})
+            for i in range(0, ev_fl+1):
+                df_fl = df_fl.rename(index={i: f"Event {i+1}"})
             dfper_fl = pd.DataFrame([info_dict]).T
             dfper_fl.columns = ['']
             dfper_fl.index.name = 'Patient Info'
@@ -494,7 +447,7 @@ def read_dicom_files(folder_path, coun):
             df_st = pd.DataFrame(data_all_st)
             df_st = df_st.fillna('Ν/Α')
             df_st = df_st.rename_axis(f'Irradiation Event X-Ray Data of {pname}')
-            for i in range(0, ev_st + 1):
+            for i in range(0, ev_st+ 1):
                 df_st = df_st.rename(index={i: f"Event {i + 1}"})
             dfper_st = pd.DataFrame([info_dict]).T
             dfper_st.columns = ['']
@@ -503,8 +456,6 @@ def read_dicom_files(folder_path, coun):
         dfinfo = pd.DataFrame([infoplus])
         dfinfo = dfinfo.rename_axis('Patient Name')
         dfinfo = dfinfo.fillna('N/A')
-        if not event_type:
-            event_type = ['N/A']
 
         return df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type
     else:
@@ -531,7 +482,6 @@ def auto_adjust_column_widths(sheet, start_row_df, max_row, max_col):
     for col, width in column_widths.items():
         sheet.column_dimensions[get_column_letter(col)].width = width
 
-author = os.getlogin()
 # open a window
 root = tk.Tk()
 root.withdraw()
@@ -545,40 +495,30 @@ output_folder = sanitize_path(output_folder)
 timestamp = time.strftime("%Y-%m-%d_%H%M%S")
 output_filename = f"Dose_Report_{timestamp}.xlsx"
 output_directory = os.path.join(output_folder, output_filename)
-# Reference Value Levels
-print("Reference Value Levels")
-def get_float(prompt):
-    try:
-        return float(input(prompt))
-    except ValueError:
-        print(f"Invalid input for {prompt.strip(':')}.")
-        return None
-DAP_value = get_float("Dose Area Product (DAP) (Gym²):")
-DOSERP_value = get_float("Dose (RP) (Gy):")
-AT_value = get_float("Acquisition Time (s):")
-# Check if the output directory exists, if not create it
+
+start_time = time.time()
+
 dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
-#----------------
+
 coun = 0
 d = {}
 total = []
 info = []
-nfl = 0
-nst = 0
-#---------------
+nst =0
+nfl =0
 
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for file in dicom_files:
         file_path = os.path.join(folder_path, file)
-        
-        df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type = read_dicom_files(file_path, coun)
+
+        df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type = read_dicom_files(file_path)
         coun += 1
         print(f"Process file:{coun}")
         if df_fl is not None and dfper_fl is not None:
             nfl += 1
             df_fl.replace(0, "empty", inplace=True)
             for i in range(len(event_type)):
-                if event_type [i] == 'Fluoroscopy':
+                if event_type[i] == 'Fluoroscopy':
                     sheet_name_fl = "Fluoro-" + str(pname) if pname else "Sheet1"
                     break
                 else:
@@ -599,7 +539,7 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
         if df_st is not None and dfper_st is not None:
             nst += 1
             df_st.replace(0, "empty", inplace=True)
-            sheet_name_st = "DSA-" + str(pname) if pname else "Sheet1"
+            sheet_name_st = "DSA-"+str(pname) if pname else "Sheet1"
             sheet_name_st = sanitize_sheet_name(sheet_name_st)
             start_row_df_st = len(dfper_st) + 2
             dfper_styled = dfper_st.style.set_properties(**{'text-align': 'left', 'white-space': 'wrap'})
@@ -613,9 +553,9 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
             d[f"sheetst {nst - 1}"] = sheet_name_st
             d[f"max_rowst {nst - 1}"] = max(start_row_df_st + len(df_st), len(dfper_st))
             d[f"max_colst {nst - 1}"] = len(df_st.columns) + 1
+
         total.append(dftotal)
         info.append(dfinfo)
-
     if total:
         # Concatenate all the DataFrames in the total list
         dft = pd.concat(total, axis=0)
@@ -643,7 +583,10 @@ if nst != 0:
         sheet = wb[d[f"sheetst {i}"]]
         max_row = d[f"max_rowst {i}"]
         max_col = d[f"max_colst {i}"]
-        start_row_df = d.get(f"start_rowst {i}", 0)
+        if not df_st.empty:
+            start_row_df = start_row_df_st
+        else:
+            start_row_df = start_row_df_fl
         sheet.row_dimensions[start_row_df + 1].height = 31
         for row in range(start_row_df + 1, max_row + 2):
             for col in range(1, max_col + 1):
@@ -655,7 +598,10 @@ if nfl != 0:
         sheet = wb[d[f"sheetfl {i}"]]
         max_row = d[f"max_rowfl {i}"]
         max_col = d[f"max_colfl {i}"]
-        start_row_df = d.get(f"start_rowfl {i}", 0)
+        if not df_st.empty:
+            start_row_df = start_row_df_st
+        else:
+            start_row_df = start_row_df_fl
         sheet.row_dimensions[start_row_df + 1].height = 31
         for row in range(start_row_df + 1, max_row + 2):
             for col in range(1, max_col + 1):
@@ -669,49 +615,6 @@ if not visible_sheets:
 
 sheet1 = wb["Accumulated X-Ray Dose Data"]
 sheet2 = wb["Basic Study Indormation"]
-#--------
-# commets exceeding levels
-for i in range(2, 2 + nfl):
-
-    try:
-        cell_value_e = float(sheet1[f'E{i}'].value)
-        if cell_value_e > 0.05:
-            sheet1[f'E{i}'].fill = openpyxl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-            comment = Comment(f"Exceeds trigger level: 0.05 Gym²", author)
-            sheet1[f'E{i}'].comment = comment
-        elif cell_value_e > DAP_value:
-            sheet1[f'E{i}'].fill = openpyxl.styles.PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-            comment = Comment(f"Exceeds reference level: {DAP_value} Gym²", author)
-            sheet1[f'E{i}'].comment = comment
-    except (TypeError, ValueError):
-        pass  # Ignore cells that are None or not numbers
-
-    try:
-        cell_value_f = float(sheet1[f'F{i}'].value)
-        if cell_value_f > 5:
-            sheet1[f'F{i}'].fill = openpyxl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-            comment = Comment(f"Exceeds trigger level: 5 Gy", author)
-            sheet1[f'F{i}'].comment = comment
-        elif cell_value_f > DOSERP_value:
-            sheet1[f'F{i}'].fill = openpyxl.styles.PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-            comment = Comment(f"Exceeds reference level: {DOSERP_value} Gy", author)
-            sheet1[f'F{i}'].comment = comment
-    except (TypeError, ValueError):
-        pass  # Ignore cells that are None or not numbers
-
-    try:
-        cell_value_m = float(sheet1[f'M{i}'].value)
-        if cell_value_m > 3600:
-            sheet1[f'M{i}'].fill = openpyxl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-            comment = Comment(f"Exceeds trigger level: 1 hour", author)
-            sheet1[f'M{i}'].comment = comment
-        elif cell_value_m > AT_value:
-            sheet1[f'M{i}'].fill = openpyxl.styles.PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-            comment = Comment(f"Exceeds reference value: {AT_value} s", author)
-            sheet1[f'M{i}'].comment = comment
-    except (TypeError, ValueError):
-        pass  # Ignore cells that are None or not numbers
-#-------    
 sheet1.row_dimensions[1].height = 31
 sheet2.row_dimensions[1].height = 31
 alignment_settings = openpyxl.styles.Alignment(wrap_text=True, horizontal='left')
@@ -728,12 +631,14 @@ column_widths = [11.1, 12.8, 7, 10, 17, 12.4, 12, 11.9, 14.5]
 for i, width in enumerate(column_widths, start=1):
     column_letter = get_column_letter(i)
     sheet2.column_dimensions[column_letter].width = width
+
 if nfl != 0 and nst != 0:
     wb.move_sheet(sheet1,offset=-(nfl+nst))
     wb.move_sheet(sheet2, offset=-(nfl+nst)-1)
 else:
     wb.move_sheet(sheet1, offset=-coun)
     wb.move_sheet(sheet2, offset=-coun - 1)
-    
 wb.save(output_directory)
-print(f"Excel file saved to: {output_directory}")
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Total processing time for {coun} patient folders: {elapsed_time:.2f} seconds")

@@ -91,8 +91,6 @@ class make_excelp ():
         return [self.name,self.id, self.manuf, self.cont, self.obs, self.totaldata, self.rpd, self.dap, self.drp,
                  self.cfa, self.ird, n]
 
-
-
     def startpro(self, pdf_file, index):
         pdf_file_path = pdf_file
         text_data = self.extract_text_from_pdf(pdf_file_path)
@@ -183,8 +181,7 @@ class make_excelp ():
             self.all_data[col] += [np.nan] * (max_length - len(self.all_data[col]))
 
         self.df = pd.DataFrame(self.all_data)
-        for i in range(0,self.events):
-            self.df = self.df.rename(index={i: "Event {0}".format(i+1)})
+            
         self.df = self.df.rename_axis('Irradiation Event X-Ray Data of '+ f"Patient {index}") #self.capname[1]+" "+self.name[1])
 
         self.data_total = {"Patient ID": f"Patient ID {index}", "Dose Area Product Total (Gym\u00b2)": self.total[0],
@@ -208,4 +205,3 @@ class make_excelp ():
         return self.df, self.dft,self.individual,self.dfin, self.person_data, self.name_id[0]
     def get_dataframes(self):
         return self.df, self.dft, self.dfper, self.name_id[0]
-

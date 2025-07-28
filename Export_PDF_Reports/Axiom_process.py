@@ -2,6 +2,22 @@ import pandas as pd
 import PyPDF2
 import datetime
 
+import re
+
+def convert_and_append(source_list, target_list):
+    result_list = []
+    for item in source_list:
+        if item == "N/A":
+            result_list.append("N/A")
+        elif isinstance(item, str):
+            numeric_sequences = re.findall(r'[-+]?\b\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\b', item)
+            for seq in numeric_sequences:
+                result_list.append(float(seq))
+        else:
+            result_list.append("N/A")
+
+    target_list.extend(result_list)
+
 class make_excel ():
 
     def extract_data_from_pdf(self, file_path):
@@ -27,70 +43,36 @@ class make_excel ():
             self.name.append(ex_data[i])
             i += 1
 
+        # Initialize attributes as empty lists for event data extraction
         self.event_type = []
-        self.birth =[]
+        self.birth = []
         self.manuf = []
-        self.cont = []
-        self.cont.extend(["N/A","N/A"])
+        self.cont = ["N/A", "N/A"]
         self.obs = []
         self.patthick = []
-        self.time =[]
-        self.time = ["N/A"]* 5
-        self.totaldata = []
+        self.time = ["N/A"] * 5
         self.totaldata = ["N/A"] * 6
 
-        self.distance =[]
-        self.rpd = []
-        self.dap = []
-        self.fm =[]
-        self.pet = []
-        self.drp = []
-        self.ppa = []
-        self.psa = []
-        self.xfm = []
-        self.cfa = []
-        self.xrftm = []
-        self.pr = []
-        self.kvp = []
-        self.xrtc = []
+        # Grouped initialization for event-related attributes
+        attr_names = [
+            'distance', 'rpd', 'dap', 'fm', 'pet', 'drp', 'ppa', 'psa', 'xfm', 'cfa', 'xrftm', 'pr',
+            'kvp', 'xrtc', 'ext', 'exp', 'pulw', 'ird', 'dstd', 'cfh', 'cfw', 'iso', 'defin'
+        ]
+        for attr in attr_names:
+            setattr(self, attr, [])
+
         n = -1
-        self.ext = []
-        self.exp= []
-        self.pulw = []
-        self.ird = []
-        self.dstd = []
-        self.cfh = []
-        self.cfw = []
-        self.iso = []
-        self.defin = []
 
         for i in range(len(ex_data)):
 
             if ex_data [i] == "Event" and ex_data[i+1] == "X-Ray" :
                 n += 1
-                self.event_type.append("N/A")
-                self.patthick.append("N/A")
-                self.dap.append("N/A")
-                self.fm.append("N/A")
-                self.pet.append("N/A")
-                self.drp.append("N/A")
-                self.ppa.append("N/A")
-                self.psa.append("N/A")
-                self.xfm.append("N/A")
-                self.cfa.append("N/A")
-                self.xrftm.append("N/A")
-                self.pr.append("N/A")
-                self.kvp.append("N/A")
-                self.xrtc.append("N/A")
-                self.ext.append("N/A")
-                self.exp.append("N/A")
-                self.pulw.append("N/A")
-                self.ird.append("N/A")
-                self.dstd.append("N/A")
-                self.cfh.append("N/A")
-                self.cfw.append("N/A")
-                self.iso.append("N/A")
-                self.distance.append("N/A")
+                attrs_to_append = [
+                    'event_type', 'patthick', 'dap', 'fm', 'pet', 'drp', 'ppa', 'psa', 'xfm', 'cfa', 'xrftm', 'pr',
+                    'kvp', 'xrtc', 'ext', 'exp', 'pulw', 'ird', 'dstd', 'cfh', 'cfw', 'iso', 'distance'
+                ]
+                for attr in attrs_to_append:
+                    getattr(self, attr).append("N/A")
             if ex_data [i] == "Person":
                 if ex_data[i+1] == "Observer" and ex_data[i+2] == "Name":
                     self.obs.append(ex_data[i+4])
@@ -259,10 +241,10 @@ class make_excel ():
             self.study = ""
             for i in range(indexs+1,len(self.name)):
                 self.study = self.study+" "+self.name[i]
-            self.study = re.sub(r'#\w+\)Study:', '', self.study)
-            self.study =self.study.replace("^", " ").replace('#FH323719)Study:','')
+            # Remove everything before and including 'Study:' (if present), including patterns like '#PN-19001015176)Study:'
+            self.study = re.sub(r'^.*?Study:', '', self.study)
             self.sex = self.sex.replace('(','').replace(',','')
-            print("Study:", self.study)
+    
             self.name_id = [s.replace('Patient:', '').replace(')Study:Ortho/TraumaSeries:Radiation', '').replace('#', '').replace(',', '')
                             .replace(')Study:GeneralSeries:Radiation', '').replace(')Study:InterventionSeries:Radiation', '').replace(')Study:Coronary^Diagnostic', '')
                             for s in self.name]
@@ -298,50 +280,27 @@ class make_excel ():
             today = datetime.date.today()
             self.age = today.year - year - ((today.month, today.day) < (month, day))
 
-            self.dap1 = []
-            self.patthick1 =[]
-            self.pet1 = []
-            self.drp1 = []
-            self.ppa1 =[]
-            self.psa1 =[]
-            self.cfa1= []
-            self.pr1= []
-            self.xrtc1= []
-            self.kvp1= []
-            self.ext1= []
-            self.pulw1= []
-            self.exp1= []
-            self.ird1= []
-            self.dstd1= []
-            self.cfh1= []
-            self.cfw1= []
-            self.iso1 =[]
-            self.defin1 = []
-            convert_and_append(self.dap, self.dap1)
-            convert_and_append(self.patthick, self.patthick1)
-            convert_and_append(self.pet, self.pet1)
-            convert_and_append(self.drp, self.drp1)
-            convert_and_append(self.ppa, self.ppa1)
-            convert_and_append(self.psa, self.psa1)
-            convert_and_append(self.cfa, self.cfa1)
-            convert_and_append(self.pr, self.pr1)
-            convert_and_append(self.xrtc, self.xrtc1)
-            convert_and_append(self.kvp, self.kvp1)
-            convert_and_append(self.ext, self.ext1)
-            convert_and_append(self.pulw, self.pulw1)
-            convert_and_append(self.exp, self.exp1)
-            convert_and_append(self.ird, self.ird1)
-            convert_and_append(self.dstd, self.dstd1)
-            convert_and_append(self.cfh, self.cfh1)
-            convert_and_append(self.cfw, self.cfw1)
-            convert_and_append(self.iso, self.iso1)
-            convert_and_append(self.defin, self.defin1)
+            # List of attribute names to process
+            attr_names = [
+                'dap', 'patthick', 'pet', 'drp', 'ppa', 'psa', 'cfa', 'pr', 'xrtc', 'kvp', 'ext', 'pulw',
+                'exp', 'ird', 'dstd', 'cfh', 'cfw', 'iso', 'defin'
+            ]
+            # Create empty lists for each *_1 attribute
+            for attr in attr_names:
+                setattr(self, f"{attr}1", [])
+            # Convert and append for each attribute
+            for attr in attr_names:
+                convert_and_append(getattr(self, attr), getattr(self, f"{attr}1"))
             ev_st = 0
             ev_fl = 0
             self.all_data_st = []
             self.all_data_fl = []
 
+            name = f"Patient {index}"
+            ID = f"Patient ID {index}"
+
             for i in range(0, self.events):
+                
                 # Handle Stationary events
                 if self.event_type[i] == 'Stationary':
                     ev_st += 1
@@ -378,8 +337,6 @@ class make_excel ():
             if self.all_data_st:
                 self.df_st = pd.DataFrame(self.all_data_st)
                 self.df_st.index = [f"Event {i + 1}" for i in range(ev_st)]
-                name = f"Patient {index}"
-                ID = f"Patient ID {index}"
                 self.obs = f"Observer {index}"
                 self.df_st = self.df_st.rename_axis(f'Irradiation Event X-Ray Data of {name}')
             else:
@@ -387,8 +344,6 @@ class make_excel ():
             if self.all_data_fl:
                 self.df_fl = pd.DataFrame(self.all_data_fl)
                 self.df_fl.index = [f"Event {i + 1}" for i in range(ev_fl)]
-                name = f"Patient {index}"
-                ID = f"Patient ID {index}"
                 self.obs = f"Observer {index}"
                 self.df_fl = self.df_fl.rename_axis(f'Irradiation Event X-Ray Data of {name}')
             else:
@@ -403,7 +358,9 @@ class make_excel ():
 
             self.person_data = [name,ID,self.sex, self.age, self.study, self.manufacturer,
                                 self.content,self.contime, self.obs ,self.events+1]
-
+            #--------
+            # Create DataFrame for person data
+            #--------
             self.dfper = pd.DataFrame(self.person_data, index=['Patient Name', 'Patient ID','Gender','Age (years)', 'Study Type', 'Manufacturer', 'Content Time', 'Content Date', 'Person Observer Name',
                                          'Number of irradiation events'], columns=[""])
             self.individual = {" Patient ID": ID,"Gender": self.sex,"Age (years)":self.age,"Study Type":self.study,
@@ -450,18 +407,3 @@ class make_excel ():
     def get_dataframes(self):
         return self.df_st,self.df_fl, self.dft, self.dfper, self.name_id[1], self.name_id[2]
 
-import re
-
-def convert_and_append(source_list, target_list):
-    result_list = []
-    for item in source_list:
-        if item == "N/A":
-            result_list.append("N/A")
-        elif isinstance(item, str):
-            numeric_sequences = re.findall(r'[-+]?\b\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\b', item)
-            for seq in numeric_sequences:
-                result_list.append(float(seq))
-        else:
-            result_list.append("N/A")
-
-    target_list.extend(result_list)

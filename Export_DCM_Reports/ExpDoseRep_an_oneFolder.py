@@ -5,6 +5,9 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from datetime import datetime as dt
 import time
+import tkinter as tk
+from tkinter import filedialog
+import pprint
 
 class DicomFile:
     def __init__(self, filename, file_path):
@@ -13,6 +16,7 @@ class DicomFile:
 
 def sanitize_path(path):
     return path.strip('"')
+
 def read_hex_to_decimal(dicom_data, tag):
     """Read a hexadecimal value from a DICOM tag and convert it to decimal."""
     if tag in dicom_data:
@@ -49,6 +53,7 @@ def read_hex_to_decimal(dicom_data, tag):
             return decimal_value
     else:
         return 'N/A'
+
 def extract_and_format_age(age_value):
     """Extract the numeric part of the age and format it."""
     if isinstance(age_value, str):
@@ -57,44 +62,46 @@ def extract_and_format_age(age_value):
             return int(numeric_part)
         else:
             raise ValueError(f"No numeric part found in value '{age_value}'")
+
 def sanitize_sheet_name(sheet_name):
     return "".join([c for c in sheet_name if c.isalnum() or c in [' ', '_', '-']]).strip()
 
-def extract_data(dicom_data):
+def extract_data(dicom_data, empties, not_available):
     # ==Totals===
-    DAPtotal = []
-    RPt = []
-    dstrp = []
-    fDAPt = []
-    fRPt = []
-    tftime = []
-    aDAPt = []
-    aRPt = []
-    rpd = []
-    tatime = []
+    # Lists for DATA
+    DAPtotal = [] # Dose Area Product Total
+    RPt = [] # Dose (RP) Total
+    dstrp = [] # Distance Source to Reference Point
+    fDAPt = [] # Fluoro Dose Area Product Total
+    fRPt = [] # Fluoro Dose (RP) Total
+    tftime = [] # Total Fluoro Time
+    aDAPt = [] # Acquisition Dose Area Product Total
+    aRPt = [] # Acquisition Dose (RP) Total
+    rpd = [] # Reference Point Definition
+    tatime = [] # Total Acquisition Time
     # ===Events==
-    event_type = []
-    DAP = []
-    drp = []
-    primang = []
-    secang = []
-    xrayfiltype = []
-    xraymat = []
-    thicmax = []
-    thicmin = []
-    pulse_rate = []
-    numb_pulses = []
-    irrad_dur = []
-    KVP = []
-    current = []
-    exp_time = []
-    pulse_width = []
-    exposure = []
-    cfield_area = []
-    cfield_height = []
-    cfield_width = []
-    ds_toiso = []
-    ds_todet = []
+    event_type = [] # Irradiation Event Type
+    DAP = [] # Dose Area Product
+    drp = [] # Dose (RP)
+    primang = [] # Positioner Primary Angle
+    secang = [] # Positioner Secondary Angle
+    xrayfiltype = [] # X-Ray Filter Type
+    xraymat = [] # X-Ray Filter Material
+    thicmax = [] # X-Ray Filter Thickness Maximum
+    thicmin = [] # X-Ray Filter Thickness Minimum
+    pulse_rate = [] # Pulse Rate
+    numb_pulses = [] # Number of Pulses
+    irrad_dur = [] # Irradiation Duration
+    KVP = [] # KVp
+    current = [] # current (mA)
+    exp_time = [] # exposure time (ms)
+    pulse_width = [] # pulse width
+    exposure = [] # Exposure
+    cfield_area = [] # Collimated Field Area
+    cfield_height = [] # Collimated Field Height
+    cfield_width = [] # Collimated Field Width
+    ds_toiso = [] # Distance Source to Isocenter
+    ds_todet = [] # Distance Source to Detector
 
     def search_sequence(sequence):
         global count  # Ensure the 'count' variable is accessible globally
@@ -106,6 +113,7 @@ def extract_data(dicom_data):
                 concept_name_code_sequence = item[(0x0040, 0xA043)].value
                 code_meaning = concept_name_code_sequence[0].get((0x0008, 0x0104), None)
                 if code_meaning:
+                    # Extract dose DATA
                     code_meaning_value = code_meaning.value
                     if code_meaning_value == 'Dose Area Product Total':
                         extract_numeric_value(item, (0x0040, 0xA300), DAPtotal)
@@ -241,43 +249,42 @@ def extract_data(dicom_data):
     def pad_list(lst, max_len):
         return lst + ['N/A'] * (max_len - len(lst))
 
-    # Pad each list
-    DAP = pad_list(DAP, max_len)
-    drp = pad_list(drp, max_len)
-    primang = pad_list(primang, max_len)
-    secang = pad_list(secang, max_len)
-    xrayfiltype = pad_list(xrayfiltype, max_len)
-    xraymat = pad_list(xraymat, max_len)
-    thicmax = pad_list(thicmax, max_len)
-    thicmin = pad_list(thicmin, max_len)
-    filttype1 = pad_list(filttype1, max_len)
-    mat1 = pad_list(mat1, max_len)
-    tmax1 = pad_list(tmax1, max_len)
-    tmin1 = pad_list(tmin1, max_len)
-    filttype2 = pad_list(filttype2, max_len)
-    mat2 = pad_list(mat2, max_len)
-    tmax2 = pad_list(tmax2, max_len)
-    tmin2 = pad_list(tmin2, max_len)
-    pulse_rate = pad_list(pulse_rate, max_len)
-    numb_pulses = pad_list(numb_pulses, max_len)
-    irrad_dur = pad_list(irrad_dur, max_len)
-    KVP = pad_list(KVP, max_len)
-    current = pad_list(current, max_len)
-    exp_time = pad_list(exp_time, max_len)
-    pulse_width = pad_list(pulse_width, max_len)
-    exposure = pad_list(exposure, max_len)
-    cfield_area = pad_list(cfield_area, max_len)
-    cfield_height = pad_list(cfield_height, max_len)
-    cfield_width = pad_list(cfield_width, max_len)
-    ds_toiso = pad_list(ds_toiso, max_len)
-    ds_todet = pad_list(ds_todet, max_len)
+    lists_to_pad = [DAP, drp, primang, secang, xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmax1, tmin1,
+        filttype2, mat2, tmax2, tmin2, pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width,
+        exposure, cfield_area, cfield_height, cfield_width, ds_toiso, ds_todet]
 
-    return DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, \
-        xrayfiltype,  xraymat, thicmax, thicmin,filttype1,mat1,tmin1,tmax1,filttype2,mat2,tmin2,tmax2, pulse_rate, \
-        numb_pulses, irrad_dur, KVP, current, exp_time, \
-        pulse_width, exposure, cfield_area, cfield_height, cfield_width, ds_toiso, ds_todet,event_type, max_len
+    # Pad all lists
+    lists_to_pad = [pad_list(lst, max_len) for lst in lists_to_pad]
 
-def read_dicom_files(folder_path, coun, rsname):
+    # Unpack back
+    (DAP, drp, primang, secang, xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmax1, tmin1, filttype2, mat2,
+     tmax2, tmin2, pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area,
+     cfield_height, cfield_width, ds_toiso, ds_todet) = lists_to_pad
+    
+    for i in range(max_len):
+        if DAP[i] == 'N/A':
+            not_available['Number of appearing']['DAP'] += 1
+        elif DAP[i] == 'empty':
+            empties['Number of appearing']['DAP'] += 1
+        if drp[i] == 'N/A':
+            not_available['Number of appearing']['Dose (RP)'] += 1
+        elif drp[i] == 'empty':
+            empties['Number of appearing']['Dose (RP)'] += 1    
+        if irrad_dur[i] == 'N/A':
+            not_available['Number of appiaring']['Irradiation Duration'] += 1
+        elif irrad_dur[i] == 'empty':
+            empties['Number of appearing']['Irradiation Duration'] += 1 
+        if KVP[i] == 'N/A':
+            not_available['Number of appearing']['KVP'] += 1
+        elif KVP[i] == 'empty':
+            empties['Number of appearing']['KVP'] += 1
+
+    return (DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, xrayfiltype,
+            xraymat, thicmax, thicmin, filttype1, mat1, tmax1, tmin1, filttype2, mat2, tmax2, tmin2, pulse_rate,
+            numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height,
+            cfield_width, ds_toiso, ds_todet, event_type, max_len, empties, not_available)
+
+def read_dicom_files(folder_path, coun, empties, not_available):
     data_total = []
     info_dict = {}
     data_all_st = []
@@ -288,189 +295,188 @@ def read_dicom_files(folder_path, coun, rsname):
     series_counts = 0
     events =0
     dose_report_found = False
-    """for file in dicom_files:
-        file_path = os.path.join(folder_path, file)"""
+
     file_counts += 1
     dicom_data = pydicom.dcmread(folder_path)
 
-    if (0x0020, 0x0011) in dicom_data and (0x0008, 0x103E) in dicom_data:
-        exam_protocol_sr = dicom_data[(0x0008, 0x103E)].value
+    sop_class_uid = dicom_data.get((0x0008, 0x0016), None)
 
-        if str(exam_protocol_sr) == str(rsname) :
-            DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, \
-            xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmin1, tmax1, filttype2, mat2, tmin2, tmax2, \
-            pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height, cfield_width, \
-            ds_toiso, ds_todet, event_type, events = extract_data(dicom_data)
+    if sop_class_uid and sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.67":
 
-            dose_report_found = True
+        DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, \
+        xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmin1, tmax1, filttype2, mat2, tmin2, tmax2, \
+        pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height, cfield_width, \
+        ds_toiso, ds_todet, event_type, events, empties, not_available = extract_data(dicom_data, empties, not_available)
 
-            ev_st = 0
-            ev_fl = 0
-            for i in range(0, events):
-                if event_type[i] == 'Stationary Acquisition':
-                    ev_st += 1
-                    data_all_st.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
-                                        'Positioner Primary Angle (deg)': primang[i],
-                                        'Positioner Secondary Angle (deg)': secang[i],
-                                        'X-Ray Filter Type': xrayfiltype[i],
-                                        'X-Ray Filter Thickness Material': xraymat[i],
-                                        'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
-                                        'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
-                                        "Pulse Rate (pulse/s)": pulse_rate[i],
-                                        "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
-                                        'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
-                                        'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
-                                        'Collimated Field Area (m²)': cfield_area[i],
-                                        'Collimated Field Height (mm)': cfield_height[i],
-                                        'Collimated Field Width (mm)': cfield_width[i],
-                                        'Distance Source to Isocenter (mm)': ds_toiso[i],
-                                        'Distance Source to Detector (mm)': ds_todet[i]})
-                elif event_type[i] == 'Fluoroscopy':
-                    ev_fl += 1
-                    data_all_fl.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
-                                        'Positioner Primary Angle (deg)': primang[i],
-                                        'Positioner Secondary Angle (deg)': secang[i],
-                                        'X-Ray Filter Type': xrayfiltype[i],
-                                        'X-Ray Filter Thickness Material': xraymat[i],
-                                        'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
-                                        'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
-                                        "Pulse Rate (pulse/s)": pulse_rate[i],
-                                        "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
-                                        'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
-                                        'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
-                                        'Collimated Field Area (m²)': cfield_area[i],
-                                        'Collimated Field Height (mm)': cfield_height[i],
-                                        'Collimated Field Width (mm)': cfield_width[i],
-                                        'Distance Source to Isocenter (mm)': ds_toiso[i],
-                                        'Distance Source to Detector (mm)': ds_todet[i]})
-                else:
-                    data_all_fl.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
-                                        'Positioner Primary Angle (deg)': primang[i],
-                                        'Positioner Secondary Angle (deg)': secang[i],
-                                        'X-Ray Filter Type': xrayfiltype[i],
-                                        'X-Ray Filter Thickness Material': xraymat[i],
-                                        'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
-                                        'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
-                                        "Pulse Rate (pulse/s)": pulse_rate[i],
-                                        "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
-                                        'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
-                                        'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
-                                        'Collimated Field Area (m²)': cfield_area[i],
-                                        'Collimated Field Height (mm)': cfield_height[i],
-                                        'Collimated Field Width (mm)': cfield_width[i],
-                                        'Distance Source to Isocenter (mm)': ds_toiso[i],
-                                        'Distance Source to Detector (mm)': ds_todet[i]})
-            if len(mat1) > 0 and len(mat2) > 0 and mat1[0] != 'N/A' and mat2[0] != 'N/A':
-                data_all1 = []
-                data_all2 = []
-                if data_all_st:
-                    for idx, item in enumerate(data_all_st):
-                        updated_item = {}
-                        for key, value in item.items():
-                            if key == 'X-Ray Filter Type':
-                                updated_item['X-Ray Filter Type 1'] = filttype1[idx]
-                                updated_item['X-Ray Filter Type 2'] = filttype2[idx]
-                            elif key == 'X-Ray Filter Thickness Material':
-                                updated_item['X-Ray Filter Thickness Material 1'] = mat1[idx]
-                                updated_item['X-Ray Filter Thickness Material 2'] = mat2[idx]
-                            elif key == 'X-Ray Filter Thickness Maximum (mmCu)':
-                                updated_item['X-Ray Filter Thickness Maximum (mmCu) 1'] = tmax1[idx]
-                                updated_item['X-Ray Filter Thickness Maximum (mmCu) 2'] = tmax2[idx]
-                            elif key == 'X-Ray Filter Thickness Minimum (mmCu)':
-                                updated_item['X-Ray Filter Thickness Minimum (mmCu) 1'] = tmin1[idx]
-                                updated_item['X-Ray Filter Thickness Minimum (mmCu) 2'] = tmin2[idx]
-                            else:
-                                updated_item[key] = value
-                        data_all1.append(updated_item)
-                    data_all_st = data_all1
-                if data_all_fl:
-                    for idx, item in enumerate(data_all_fl):
-                        updated_item = {}
-                        for key, value in item.items():
-                            if key == 'X-Ray Filter Type':
-                                updated_item['X-Ray Filter Type 1'] = filttype1[idx]
-                                updated_item['X-Ray Filter Type 2'] = filttype2[idx]
-                            elif key == 'X-Ray Filter Thickness Material':
-                                updated_item['X-Ray Filter Thickness Material 1'] = mat1[idx]
-                                updated_item['X-Ray Filter Thickness Material 2'] = mat2[idx]
-                            elif key == 'X-Ray Filter Thickness Maximum (mmCu)':
-                                updated_item['X-Ray Filter Thickness Maximum (mmCu) 1'] = tmax1[idx]
-                                updated_item['X-Ray Filter Thickness Maximum (mmCu) 2'] = tmax2[idx]
-                            elif key == 'X-Ray Filter Thickness Minimum (mmCu)':
-                                updated_item['X-Ray Filter Thickness Minimum (mmCu) 1'] = tmin1[idx]
-                                updated_item['X-Ray Filter Thickness Minimum (mmCu) 2'] = tmin2[idx]
-                            else:
-                                updated_item[key] = value
-                        data_all2.append(updated_item)
-                    data_all_fl = data_all2
-            study_date_str = dicom_data.get('StudyDate', 'N/A')
-            if study_date_str != 'N/A':
-                content_date = dt.strptime(study_date_str, '%Y%m%d')
-                date_str = content_date.strftime('%Y-%m-%d')
-                info_dict['Content Date'] = date_str
-            physician = f"Physician {coun}"
-            data_total.append(
-                {"Patient ID": dicom_data.get('PatientID', 'N/A'), "Manufacturer": dicom_data.get('Manufacturer', 'N/A'),
-                    "Content Date": date_str, 'Performing Physician': physician,
-                    'Dose Area Product Total (μGym²)': DAPtotal[0] if len(DAPtotal) > 0 else 'N/A',
-                    'Dose (RP) Total (mGy)': RPt[0] if len(RPt) > 0 else 'N/A',
-                    'Fluoro Dose Area Product Total (μGym²)': fDAPt[0] if len(fDAPt) > 0 else 'N/A',
-                    "Fluoro Dose (RP) Total (Gy)": fRPt[0] if len(fRPt) > 0 else 'N/A',
-                    "Total Fluoro Time (s)": tftime[0] if len(tftime) > 0 else 'N/A',
-                    "Acquisition Dose Area Product Total (Gym²)": aDAPt[0] if len(aDAPt) > 0 else 'N/A',
-                    "Acquisition Dose (RP) Total (Gy)": aRPt[0] if len(aRPt) > 0 else 'N/A',
-                    "Reference Point Definition (cm)": rpd[0] if len(rpd) > 0 else 'N/A',
-                    "Total Acquisition Time (s)": tatime[0] if len(tatime) > 0 else 'N/A'})
+        dose_report_found = True
 
-
-        else:
-            pass
-        series_counts += 1
-        if not first_file_processed:
-            physician = f"Physician {coun}"
-            pname = f'Patient {coun}'
-            info_dict = {'Patient Name': pname, 'Patient ID': dicom_data.get('PatientID', 'N/A'),
-                'Content Date': dicom_data.get('StudyDate', 'N/A'),
-                'Performing Physician': physician}
-            psex = dicom_data[(0x0010, 0x0040)].value
-
-            if psex == 'F':
-                psex = 'Female'
+        ev_st = 0
+        ev_fl = 0
+        for i in range(0, events):
+            if event_type[i] == 'Stationary Acquisition':
+                ev_st += 1
+                data_all_st.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
+                                    'Positioner Primary Angle (deg)': primang[i],
+                                    'Positioner Secondary Angle (deg)': secang[i],
+                                    'X-Ray Filter Type': xrayfiltype[i],
+                                    'X-Ray Filter Thickness Material': xraymat[i],
+                                    'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
+                                    'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
+                                    "Pulse Rate (pulse/s)": pulse_rate[i],
+                                    "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
+                                    'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
+                                    'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
+                                    'Collimated Field Area (m²)': cfield_area[i],
+                                    'Collimated Field Height (mm)': cfield_height[i],
+                                    'Collimated Field Width (mm)': cfield_width[i],
+                                    'Distance Source to Isocenter (mm)': ds_toiso[i],
+                                    'Distance Source to Detector (mm)': ds_todet[i]})
+            elif event_type[i] == 'Fluoroscopy':
+                ev_fl += 1
+                data_all_fl.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
+                                    'Positioner Primary Angle (deg)': primang[i],
+                                    'Positioner Secondary Angle (deg)': secang[i],
+                                    'X-Ray Filter Type': xrayfiltype[i],
+                                    'X-Ray Filter Thickness Material': xraymat[i],
+                                    'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
+                                    'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
+                                    "Pulse Rate (pulse/s)": pulse_rate[i],
+                                    "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
+                                    'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
+                                    'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
+                                    'Collimated Field Area (m²)': cfield_area[i],
+                                    'Collimated Field Height (mm)': cfield_height[i],
+                                    'Collimated Field Width (mm)': cfield_width[i],
+                                    'Distance Source to Isocenter (mm)': ds_toiso[i],
+                                    'Distance Source to Detector (mm)': ds_todet[i]})
             else:
-                psex = 'Male'
-            first_file_processed = True
-            study_date_str = dicom_data.get('StudyDate', 'N/A')
-            if study_date_str != 'N/A':
-                content_date = dt.strptime(study_date_str, '%Y%m%d')
-                date_str = content_date.strftime('%Y-%m-%d')
-                info_dict['Content Date'] = date_str
-
-            content_time = dicom_data.get('ContentTime','N/A')
-            if content_time != 'N/A':
-                # Convert the Content Time to HH:MM:SS format
-                time_str = content_time[:2] + ':' + content_time[2:4] + ':' + content_time[4:6]
-            else:
-                print("ContentTime not available")
-
-            if (0x0010,0x1010) in dicom_data:
-                age = dicom_data[(0x0010,0x1010)].value
-                age = extract_and_format_age(age)
-            else:
-                # Calculate the age using the patient's birth date and the study date
-                birth_date_str = dicom_data[(0x0010, 0x0030)].value  # Patient's Birth Date
-                if birth_date_str != 'N/A' and study_date_str != 'N/A':
-
-                    birth_date = dt.strptime(birth_date_str, '%Y%m%d')
-                    age = content_date.year - birth_date.year - (
-                                (content_date.month, content_date.day) < (birth_date.month, birth_date.day))
-                    age_str = f"{age}Y"  # Format age as years (e.g., '45Y')
-                else:
-                    age_str = 'N/A'
-
-            infoplus = {'Patient Name': pname,'Patient ID': dicom_data.get('PatientID', 'N/A'),
-            "Gender": psex,'Age (years)':age,'Study Description':dicom_data.get('StudyDescription', 'N/A'),
-            "Manufacturer":dicom_data.get("Manufacturer", 'N/A'),'Content Date': date_str,'Content Time':time_str,
+                data_all_fl.append({"Dose Area Product (Gym²)": DAP[i], "Dose (RP) (Gy)": drp[i],
+                                    'Positioner Primary Angle (deg)': primang[i],
+                                    'Positioner Secondary Angle (deg)': secang[i],
+                                    'X-Ray Filter Type': xrayfiltype[i],
+                                    'X-Ray Filter Thickness Material': xraymat[i],
+                                    'X-Ray Filter Thickness Maximum (mmCu)': thicmax[i],
+                                    'X-Ray Filter Thickness Minimum (mmCu)': thicmin[i],
+                                    "Pulse Rate (pulse/s)": pulse_rate[i],
+                                    "Irradiation Duration (s)": irrad_dur[i], 'KVP': KVP[i],
+                                    'X-Ray Tube Current (mA)': current[i], 'Exposure Time (ms)': exp_time[i],
+                                    'Pulse Width (ms)': pulse_width[i], 'Exposure (uA.s)': exposure[i],
+                                    'Collimated Field Area (m²)': cfield_area[i],
+                                    'Collimated Field Height (mm)': cfield_height[i],
+                                    'Collimated Field Width (mm)': cfield_width[i],
+                                    'Distance Source to Isocenter (mm)': ds_toiso[i],
+                                    'Distance Source to Detector (mm)': ds_todet[i]})
+        if len(mat1) > 0 and len(mat2) > 0 and mat1[0] != 'N/A' and mat2[0] != 'N/A':
+            data_all1 = []
+            data_all2 = []
+            if data_all_st:
+                for idx, item in enumerate(data_all_st):
+                    updated_item = {}
+                    for key, value in item.items():
+                        if key == 'X-Ray Filter Type':
+                            updated_item['X-Ray Filter Type 1'] = filttype1[idx]
+                            updated_item['X-Ray Filter Type 2'] = filttype2[idx]
+                        elif key == 'X-Ray Filter Thickness Material':
+                            updated_item['X-Ray Filter Thickness Material 1'] = mat1[idx]
+                            updated_item['X-Ray Filter Thickness Material 2'] = mat2[idx]
+                        elif key == 'X-Ray Filter Thickness Maximum (mmCu)':
+                            updated_item['X-Ray Filter Thickness Maximum (mmCu) 1'] = tmax1[idx]
+                            updated_item['X-Ray Filter Thickness Maximum (mmCu) 2'] = tmax2[idx]
+                        elif key == 'X-Ray Filter Thickness Minimum (mmCu)':
+                            updated_item['X-Ray Filter Thickness Minimum (mmCu) 1'] = tmin1[idx]
+                            updated_item['X-Ray Filter Thickness Minimum (mmCu) 2'] = tmin2[idx]
+                        else:
+                            updated_item[key] = value
+                    data_all1.append(updated_item)
+                data_all_st = data_all1
+            if data_all_fl:
+                for idx, item in enumerate(data_all_fl):
+                    updated_item = {}
+                    for key, value in item.items():
+                        if key == 'X-Ray Filter Type':
+                            updated_item['X-Ray Filter Type 1'] = filttype1[idx]
+                            updated_item['X-Ray Filter Type 2'] = filttype2[idx]
+                        elif key == 'X-Ray Filter Thickness Material':
+                            updated_item['X-Ray Filter Thickness Material 1'] = mat1[idx]
+                            updated_item['X-Ray Filter Thickness Material 2'] = mat2[idx]
+                        elif key == 'X-Ray Filter Thickness Maximum (mmCu)':
+                            updated_item['X-Ray Filter Thickness Maximum (mmCu) 1'] = tmax1[idx]
+                            updated_item['X-Ray Filter Thickness Maximum (mmCu) 2'] = tmax2[idx]
+                        elif key == 'X-Ray Filter Thickness Minimum (mmCu)':
+                            updated_item['X-Ray Filter Thickness Minimum (mmCu) 1'] = tmin1[idx]
+                            updated_item['X-Ray Filter Thickness Minimum (mmCu) 2'] = tmin2[idx]
+                        else:
+                            updated_item[key] = value
+                    data_all2.append(updated_item)
+                data_all_fl = data_all2
+        study_date_str = dicom_data.get('StudyDate', 'N/A')
+        if study_date_str != 'N/A':
+            content_date = dt.strptime(study_date_str, '%Y%m%d')
+            date_str = content_date.strftime('%Y-%m-%d')
+            info_dict['Content Date'] = date_str
+        physician = f"Physician {coun}"
+        data_total.append(
+            {"Patient ID": dicom_data.get('PatientID', 'N/A'), "Manufacturer": dicom_data.get('Manufacturer', 'N/A'),
+                "Content Date": date_str, 'Performing Physician': physician,
+                'Dose Area Product Total (μGym²)': DAPtotal[0] if len(DAPtotal) > 0 else 'N/A',
+                'Dose (RP) Total (mGy)': RPt[0] if len(RPt) > 0 else 'N/A',
+                'Fluoro Dose Area Product Total (μGym²)': fDAPt[0] if len(fDAPt) > 0 else 'N/A',
+                "Fluoro Dose (RP) Total (Gy)": fRPt[0] if len(fRPt) > 0 else 'N/A',
+                "Total Fluoro Time (s)": tftime[0] if len(tftime) > 0 else 'N/A',
+                "Acquisition Dose Area Product Total (Gym²)": aDAPt[0] if len(aDAPt) > 0 else 'N/A',
+                "Acquisition Dose (RP) Total (Gy)": aRPt[0] if len(aRPt) > 0 else 'N/A',
+                "Reference Point Definition (cm)": rpd[0] if len(rpd) > 0 else 'N/A',
+                "Total Acquisition Time (s)": tatime[0] if len(tatime) > 0 else 'N/A'})
+        empties['Manufacturer'] = dicom_data.get('Manufacturer', 'N/A')
+        not_available['Manufacturer'] = dicom_data.get('Manufacturer', 'N/A')
+    else:
+        pass
+    series_counts += 1
+    if not first_file_processed:
+        physician = f"Physician {coun}"
+        pname = f'Patient {coun}'
+        info_dict = {'Patient Name': pname, 'Patient ID': dicom_data.get('PatientID', 'N/A'),
+            'Content Date': dicom_data.get('StudyDate', 'N/A'),
             'Performing Physician': physician}
+        psex = dicom_data[(0x0010, 0x0040)].value
+
+        if psex == 'F':
+            psex = 'Female'
+        else:
+            psex = 'Male'
+        first_file_processed = True
+        study_date_str = dicom_data.get('StudyDate', 'N/A')
+        if study_date_str != 'N/A':
+            content_date = dt.strptime(study_date_str, '%Y%m%d')
+            date_str = content_date.strftime('%Y-%m-%d')
+            info_dict['Content Date'] = date_str
+
+        content_time = dicom_data.get('ContentTime','N/A')
+        if content_time != 'N/A':
+            # Convert the Content Time to HH:MM:SS format
+            time_str = content_time[:2] + ':' + content_time[2:4] + ':' + content_time[4:6]
+        else:
+            print("ContentTime not available")
+
+        if (0x0010,0x1010) in dicom_data:
+            age = dicom_data[(0x0010,0x1010)].value
+            age = extract_and_format_age(age)
+        else:
+            # Calculate the age using the patient's birth date and the study date
+            birth_date_str = dicom_data[(0x0010, 0x0030)].value  # Patient's Birth Date
+            if birth_date_str != 'N/A' and study_date_str != 'N/A':
+
+                birth_date = dt.strptime(birth_date_str, '%Y%m%d')
+                age = content_date.year - birth_date.year - (
+                            (content_date.month, content_date.day) < (birth_date.month, birth_date.day))
+                age_str = f"{age}Y"  # Format age as years (e.g., '45Y')
+            else:
+                age_str = 'N/A'
+
+        infoplus = {'Patient Name': pname,'Patient ID': dicom_data.get('PatientID', 'N/A'),
+        "Gender": psex,'Age (years)':age,'Study Description':dicom_data.get('StudyDescription', 'N/A'),
+        "Manufacturer":dicom_data.get("Manufacturer", 'N/A'),'Content Date': date_str,'Content Time':time_str,
+        'Performing Physician': physician}
     if not dose_report_found:
         print(f"No dose report found in folder {folder_path}")
 
@@ -499,15 +505,17 @@ def read_dicom_files(folder_path, coun, rsname):
             dfper_st = pd.DataFrame([info_dict]).T
             dfper_st.columns = ['']
             dfper_st.index.name = 'Patient Info'
+        if ev_st == 0:
+            empties['Number of appearing']['DSA frames'] += 1
         dftotal = pd.DataFrame(data_total)
         dfinfo = pd.DataFrame([infoplus])
         dfinfo = dfinfo.rename_axis('Patient Name')
         dfinfo = dfinfo.fillna('N/A')
 
-        return df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type
+        return df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type, empties, not_available
     else:
         print("No valid DICOM files processed.")
-        return None, None, None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None, None
 
 def auto_adjust_column_widths(sheet, start_row_df, max_row, max_col):
     column_widths = {}
@@ -529,9 +537,19 @@ def auto_adjust_column_widths(sheet, start_row_df, max_row, max_col):
     for col, width in column_widths.items():
         sheet.column_dimensions[get_column_letter(col)].width = width
 
-folder_path = sanitize_path(input(r'Write the path of the folder with DICOM DATA: '))
-output_directory = sanitize_path(input(r"Write the path of the excel file: "))
-rsname = input (r'Write the series description of Radiation Dose Report: ')
+# open a window
+root = tk.Tk()
+root.withdraw()
+# Select DICOM folder
+folder_path = filedialog.askdirectory(title="Select Folder with DICOM DATA")
+folder_path = sanitize_path(folder_path)
+# Select output folder for the new Excel file
+output_folder = filedialog.askdirectory(title="Select Folder to Save the Excel File")
+output_folder = sanitize_path(output_folder)
+# Automatically create an Excel file path
+timestamp = time.strftime("%Y-%m-%d_%H%M%S")
+output_filename = f"Dose_Report_{timestamp}.xlsx"
+output_directory = os.path.join(output_folder, output_filename)
 start_time = time.time()
 
 dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
@@ -542,14 +560,31 @@ total = []
 info = []
 nfl = 0
 nst = 0
-
+kbs = []
+times = []
+max_time = 0
+empties = {"Manufacturer":'',"Number of appearing":{"DAP": 0, "Dose (RP)": 0, "DSA frames": 0,
+           "Irradiation Duration": 0, 'KVP': 0
+           }}
+not_available = {"Manufacturer":'',"Number of appearing":{"DAP": 0, "Dose (RP)": 0, "DSA frames": 0,
+           "Irradiation Duration": 0, 'KVP': 0
+           }}
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for file in dicom_files:
         file_path = os.path.join(folder_path, file)
-
-        df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type = read_dicom_files(file_path, coun, rsname)
+        # time, size etc.
+        processing_start_time = time.time()
+        size_kb = os.path.getsize(file_path) / 1024  # Size in KB
+        folder_name = os.path.basename(os.path.dirname(file_path))
+        kbs.append(size_kb)
+        #--------------------
+        df_fl, df_st, dftotal, dfper_fl, dfper_st, pname, dfinfo, event_type, empties, not_available = read_dicom_files(file_path, coun, empties, not_available)
         coun += 1
+        if df_st is None:
+            not_available["Number of appearing"]["DSA frames"] += 1
+        
         print(f"Process file:{coun}")
+        
         if df_fl is not None and dfper_fl is not None:
             nfl += 1
             df_fl.replace(0, "empty", inplace=True)
@@ -591,6 +626,18 @@ with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
             d[f"max_colst {nst - 1}"] = len(df_st.columns) + 1
         total.append(dftotal)
         info.append(dfinfo)
+        # processing time
+        processed_time = time.time() - processing_start_time
+        times.append(processed_time)
+        # Track maximum processing time and patient index
+        if processed_time > max_time:
+            max_time = processed_time
+            max_patient = coun
+            max_patient_name = pname if pname else "Unknown"
+            max_kb = size_kb
+            print(f"New maximum processing time: {max_time:.2f} seconds for Patient {max_patient} ({max_patient_name}, {size_kb:.2f} KB)")
+        print(f"Time taken for Patient {coun}: {processed_time:.2f} seconds")
+
     if total:
         # Concatenate all the DataFrames in the total list
         dft = pd.concat(total, axis=0)
@@ -674,6 +721,26 @@ else:
     wb.move_sheet(sheet1, offset=-coun)
     wb.move_sheet(sheet2, offset=-coun - 1)
 wb.save(output_directory)
+# <--- End timing, print total time and number of dicom processed
 end_time = time.time()
-elapsed_time = end_time - start_time
-print(f"Total processing time for {coun} patient folders: {elapsed_time:.2f} seconds")
+sum_time = end_time - start_time
+mean_time = sum_time / len(dicom_files) if dicom_files else 0
+stdv = pd.Series(times).std() if times else 0
+time_per_kb = [t / k if k > 0 else 0 for t, k in zip(times, kbs)]
+mean_time_per_kb = sum(time_per_kb) / len(time_per_kb) if time_per_kb else 0
+stdv_time_per_kb = pd.Series(time_per_kb).std() if time_per_kb else 0
+
+print(f"\nProcessed {len(dicom_files)} DICOM files.")
+print(f"Total execution time: {sum_time:.2f} seconds")
+print(f"Maximum processing time for a single patient: {max_time:.2f} seconds (Patient {max_patient})")
+print(f"Maximum time file size: {max_kb:.2f} KB (Patient {max_patient_name})")
+print(f"Mean processing time per patient: {mean_time:.2f} seconds")
+print(f"Standard deviation of processing times: {stdv:.2f} seconds")
+print(f'Mean processing times per KB: {mean_time_per_kb}(seconds per KB)')
+print(f'Standard deviation of processing times per KB: {stdv_time_per_kb}(seconds per KB)')
+print(f"Number of Fluoroscopy events: {nfl}")
+print(f"Number of DSA events: {nst}")
+print(f"Total number of processed patients: {coun}")
+pprint.pprint(empties)
+pprint.pprint(not_available)
+print("\nProcessing done!")

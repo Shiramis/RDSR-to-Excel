@@ -23,7 +23,7 @@ patients = []
 individual = []
 index = 0
 d = {}
-
+# ------------------------------
 with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
     for pdf_file in pdf_files:
         data = make_excel()
