@@ -117,7 +117,15 @@ def read_dicom_files(folder_path):
         if study_date_str != 'N/A':
             content_date = dt.strptime(study_date_str, '%Y%m%d')
 
-        if sop_class_uid and sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.67":
+        modality = dicom_data.get("Modality", "")
+        series_desc = dicom_data.get("SeriesDescription", "")
+
+        if ((sop_class_uid and (
+                sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.67"  # Standard X-Ray Radiation Dose SR
+                or sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.68"  # Enhanced Dose SR
+                ))
+                or (modality == "SR" and "dose" in series_desc.lower())  # vendor SR fallback
+                ):
 
             DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime = extract_data(dicom_data)
             dose_report_found = True

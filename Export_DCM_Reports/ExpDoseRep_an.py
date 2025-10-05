@@ -301,9 +301,15 @@ def read_dicom_files(folder_path, coun):
         dicom_data = pydicom.dcmread(file_path)
         
         sop_class_uid = dicom_data.get((0x0008, 0x0016), None)
+        modality = dicom_data.get("Modality", "")
+        series_desc = dicom_data.get("SeriesDescription", "")
 
-        if sop_class_uid and sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.67":
-
+        if ((sop_class_uid and (
+                sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.67"  # Standard X-Ray Radiation Dose SR
+                or sop_class_uid.value == "1.2.840.10008.5.1.4.1.1.88.68"  # Enhanced Dose SR
+                ))
+                or (modality == "SR" and "dose" in series_desc.lower())  # vendor SR fallback
+                ):
             DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime, DAP, drp, primang, secang, \
             xrayfiltype, xraymat, thicmax, thicmin, filttype1, mat1, tmin1, tmax1, filttype2, mat2, tmin2, tmax2, \
             pulse_rate, numb_pulses, irrad_dur, KVP, current, exp_time, pulse_width, exposure, cfield_area, cfield_height, cfield_width, \
