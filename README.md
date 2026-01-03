@@ -18,10 +18,6 @@ Executable files for different C-Arms and DICOM are available for download:
 2. Run the executable:
 - Double-click the downloaded .exe file and follow the prompts to provide the path to the folder with PDF/DICOM files and the path for the output Excel file.
   
-```plaintext
-    Write the path of the folder with DATA: "path/to/pdf_folder"
-    Write the path of the excel file: "path/to/output_excel_file.xlsx"
-```
 ## File Descriptions
 
 - `Export_Axiom.py`: Script for processing Siemens Axiom PDF files and exporting dose data to Excel.
