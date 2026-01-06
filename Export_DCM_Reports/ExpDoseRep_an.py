@@ -66,6 +66,19 @@ def extract_and_format_age(age_value):
 def sanitize_sheet_name(sheet_name):
     return "".join([c for c in sheet_name if c.isalnum() or c in [' ', '_', '-']]).strip()
 
+def _map_series_description(series_desc: str, config_map=None):
+    if not config_map or not series_desc:
+        return None  # καμία αντιστοίχιση
+    for rule in config_map:
+        pat = rule.get("pattern")
+        if pat and re.search(pat, series_desc):
+            return {
+                "class": rule.get("class", "Mapped"),
+                "rule_id": rule.get("id", "rule"),
+                "provenance": "Config:SeriesDescription"
+            }
+    return None
+
 def extract_data(dicom_data):
     # ==Totals===
     DAPtotal = []
@@ -431,7 +444,34 @@ def read_dicom_files(folder_path, coun):
                     "Total Acquisition Time (s)": tatime[0] if len(tatime) > 0 else 'N/A'})
 
         else:
-            pass
+            # ---------- Tier 2: mapping πάνω σε SeriesDescription ----------
+            series_desc = dicom_data.get('SeriesDescription', '') or ''
+            mapped = _map_series_description(series_desc, config_map)
+
+            if mapped:
+                # Μόνο ελαφριά σύνοψη + provenance (δεν υπάρχει RDSR → δεν έχουμε events/metrics)
+                date_str = 'N/A'
+                study_date_str = dicom_data.get('StudyDate', 'N/A')
+                if study_date_str != 'N/A':
+                    try:
+                        content_date = dt.strptime(study_date_str, '%Y%m%d')
+                        date_str = content_date.strftime('%Y-%m-%d')
+                    except Exception:
+                        date_str = 'N/A'
+
+                data_total.append({
+                    "Patient ID": f'Patient ID {coun}',
+                    "Manufacturer": dicom_data.get('Manufacturer', 'N/A'),
+                    "Content Date": date_str,
+                    "Series Description": series_desc,
+                    "Mapped Class": mapped["class"],
+                    "Mapping Rule": mapped["rule_id"],
+                    "Provenance": mapped["provenance"]
+                })
+                
+            else:
+                # ---------- Tier 3: PASS (skip) ----------
+                pass
         series_counts += 1
         if not first_file_processed:
             physician = f"Physician {coun}"

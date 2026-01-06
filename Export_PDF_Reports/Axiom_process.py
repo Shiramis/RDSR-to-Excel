@@ -62,7 +62,6 @@ class make_excel ():
             setattr(self, attr, [])
 
         n = -1
-
         for i in range(len(ex_data)):
 
             if ex_data [i] == "Event" and ex_data[i+1] == "X-Ray" :
@@ -80,7 +79,7 @@ class make_excel ():
                         self.obs[0] = ex_data[i+4] +" "+ ex_data[i+5]
             if re.match(r'\*\d|\*+\d', ex_data[i]):
                 self.birth.append(ex_data[i])
-            elif re.match(r'Date/Time:\d|Started:\d', ex_data[i]):
+            elif re.match(r'Date/Time:\d+|Started:\d+', ex_data[i]):
                 self.cont[0] = ex_data[i]
                 self.cont[1] = ex_data[i+1]
             elif re.match(r'Manufacturer', ex_data[i]):
@@ -124,12 +123,12 @@ class make_excel ():
                     self.dap [n] = ex_data [i+1]
                 else:
                     self.dap [n] = ex_data [i] #Dose area product DAP
-            elif re.match(r"Thickness:+\d|Thickness:\d|Thickness:",ex_data[i]) and re.match(r"Equivalent",ex_data[i-1]):
+            elif re.match(r"^\s*Thickness:\s*(\d+(?:[.,]\d+)?)?",ex_data[i]) and re.match(r"Equivalent",ex_data[i-1]):
                 if ex_data [i] =="Thickness:":
                     self.patthick [n] = ex_data [i+1]
                 else:
                     self.patthick [n] = ex_data [i] #Patient Equivalent Thickness (mm)
-            elif re.match(r"\(RP\):\d|\(RP\) :\d|\(RP\):|\(RP\):emptyPositioner",ex_data[i]):
+            elif re.match(r"\(RP\):\d+|\(RP\) :\d+|\(RP\):|\(RP\):emptyPositioner",ex_data[i]):
                 if re.match(r"\d+|\d", ex_data[i + 1]):
                     self.drp[n] = ex_data [i+1]
                 elif ex_data [i] == "(RP):emptyPositioner":
@@ -167,7 +166,7 @@ class make_excel ():
                     self.pr [n] = ex_data[i+1]
                 else:
                     self.pr [n] = ex_data [i] #Pulse Rate (pulse/s)
-            elif re.match(r"sKVP:\d|\dKVP:\d|KVP:|sKVP:|\wKVP:\d", ex_data[i]):
+            elif re.match(r"KVP:\d+|\d+KVP:\d+|KVP:|w+KVP:|\w+KVP:\d+", ex_data[i]):
                 if ex_data[i] == "sKVP:" or ex_data == "KVP:":
                     self.kvp[n] = ex_data[i + 1]
                 else:
@@ -177,7 +176,7 @@ class make_excel ():
                     self.xrtc [n] = ex_data [i+1]
                 else:
                     self.xrtc [n] = ex_data [i] #X-Ray Tube Current (mA)
-            elif re.match(r"msExposure:\d|sExposure:\d|Exposure:\d|Exposure:|\wExposure:\d", ex_data[i]):
+            elif re.match(r"^(?:\w+)?\s*Exposure:\s*\d+(?:[.,]\d+)?", ex_data[i]):
                 if ex_data [i] == "Exposure:":
                     self.exp [n] = ex_data [i+1]
                 else:

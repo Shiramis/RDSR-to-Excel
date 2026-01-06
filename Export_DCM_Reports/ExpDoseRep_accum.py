@@ -102,8 +102,13 @@ def extract_data(dicom_data):
     return DAPtotal, RPt, dstrp, fDAPt, fRPt, tftime, aDAPt, aRPt, rpd, tatime
 
 def read_dicom_files(folder_path):
+    if not os.path.isdir(folder_path):
+        # Άμυνα αν περάσει κατά λάθος αρχείο
+        return [], None
+
     data_total = []
-    dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]  # Add proper file extensions if needed
+    dicom_files = list_dicom_files(folder_path)
+      # Add proper file extensions if needed
     first_file_processed = False
     dose_report_found = False
     for file in dicom_files:
@@ -150,6 +155,7 @@ def read_dicom_files(folder_path):
                     'Patient ID': dicom_data.get('PatientID', 'N/A'),
                     'Age (years)': age,
                     'Manufacturer': dicom_data.get('Manufacturer', 'N/A'),
+                    'Study Description': dicom_data.get('StudyDescription', 'N/A'),
                     'Station Name': dicom_data.get('StationName', 'N/A'),
                     'Institution Name': dicom_data.get('InstitutionName', 'N/A'),
                     'Study Date': study_date_str,
@@ -175,6 +181,16 @@ def read_dicom_files(folder_path):
     else:
         return None, None
 
+def list_dicom_files(folder):
+    """Επιστρέφει ΜΟΝΟ έγκυρα DICOM αρχεία: .dcm ή χωρίς επέκταση, όχι κρυφά/mac σκουπιδάκια."""
+    return [
+        entry.path
+        for entry in os.scandir(folder)
+        if entry.is_file()
+        and not entry.name.startswith(".")  # κόβει .DS_Store και ._*
+        and (entry.name.lower().endswith(".dcm") or os.path.splitext(entry.name)[1] == "")
+    ]
+
 author = os.getlogin()
 # open a window
 root = tk.Tk()
@@ -191,7 +207,6 @@ timestamp = time.strftime("%Y-%m-%d_%H%M%S")
 output_filename = f"Dose_Report_{timestamp}.xlsx"
 output_directory = os.path.join(output_folder, output_filename)
 
-start_time = time.time()
 # Reference Value Levels
 print("Reference Value Levels")
 def get_float(prompt):
@@ -204,117 +219,181 @@ DAP_value = get_float("Dose Area Product (DAP) (Gym²):")
 DOSERP_value = get_float("Dose (RP) (Gy):")
 AT_value = get_float("Acquisition Time (s):")
 
-dicom_files = [file for file in os.listdir(folder_path) if file.endswith('') or file.endswith('.dcm')]
+files_here = list_dicom_files(folder_path)
 
-kbs = []
-times = []
-max_time = 0
+if files_here:
+    # Χειρισμός περίπτωσης: διάλεξες απευθείας φάκελο ασθενή
+    patient_dirs = [folder_path]
+else:
+    # Συνήθης περίπτωση: διάλεξες root που περιέχει φακέλους ασθενών
+    patient_dirs = [
+        entry.path for entry in os.scandir(folder_path)
+        if entry.is_dir() and not entry.name.startswith(".")
+    ]
+
 total = []
 coun = 0
 
-for file in dicom_files:
-    file_path = os.path.join(folder_path, file)
-    # time, size etc.
-    processing_start_time = time.time()
-    size_kb = os.path.getsize(file_path) / 1024  # Size in KB
-    folder_name = os.path.basename(os.path.dirname(file_path))
-    kbs.append(size_kb)
+for pdir in patient_dirs:
+    dftotal, pname = read_dicom_files(pdir)
+    
     #--------------------
-    dftotal, pname = read_dicom_files(file_path)
 
     if dftotal is not None and not dftotal.empty:
         total.append(dftotal)
         coun += 1
         print(f"Processed file: {coun}")
     else:
-        print(f"Skipped file (no data): {file}")
-    # processing time
-    processed_time = time.time() - processing_start_time
-    times.append(processed_time)
-    # Track maximum processing time and patient index
-    if processed_time > max_time:
-        max_time = processed_time
-        max_patient = coun
-        max_patient_name = folder_name
-        max_kb = size_kb
-        print(f"New maximum processing time: {max_time:.2f} seconds for Patient {max_patient} ({max_patient_name}, {size_kb:.2f} KB)")
-    print(f"Time taken for Patient {coun}: {processed_time:.2f} seconds")
-
+        print(f"Skipped folder (no data): {pdir}")
+    
 if total:
     with pd.ExcelWriter(output_directory, engine='openpyxl') as writer:
-        dft = pd.concat(total, axis=0)
-        dft.replace(0, "empty", inplace=True)
-        dft.columns = pd.Index(
-            [f'{col}_{i}' if dft.columns.duplicated()[i] else col for i, col in enumerate(dft.columns)])
-        dft.index = pd.Index(
-            [f'{idx}_{i}' if dft.index.duplicated()[i] else idx for i, idx in enumerate(dft.index)])
-        dfstpat = dft.style.set_properties(**{'text-align': 'left', 'white-space': 'wrap'})
-        dft = dfstpat.set_properties(**{'border': '1px solid black', 'border-collapse': 'collapse'})
-        dft.to_excel(writer, sheet_name="Accumulated X-Ray Dose Data", index=False)
+        # Συνένωση όλων των DataFrames
+        dft = pd.concat(total, axis=0, ignore_index=True)
+
+        # Κλειδιά ομαδοποίησης
+        key_cols = ['Patient Name', 'Patient ID']
+
+        # Δηλώνουμε ρητά ποιες στήλες είναι αριθμητικές για άθροιση
+        numeric_cols = [
+            'Dose Area Product Total (Gym²)',
+            'Dose (RP) Total (Gy)',
+            'Fluoro Dose Area Product Total (μGym²)',
+            'Fluoro Dose (RP) Total (Gy)',
+            'Total Fluoro Time (s)',
+            'Acquisition Dose Area Product Total (Gym²)',
+            'Acquisition Dose (RP) Total (Gy)',
+            'Total Acquisition Time (s)',
+            # βάλε κι άλλες ΜΟΝΟ αν είσαι βέβαιος ότι είναι αριθμητικές
+        ]
+
+        # Προσοχή: ΜΗΝ πειράξεις Patient ID / Study Date (μένουν string)
+        # Κάνουμε numeric coercion μόνο στις δηλωμένες numeric_cols
+        for col in numeric_cols:
+            if col in dft.columns:
+                dft[col] = pd.to_numeric(dft[col], errors='coerce')
+
+        # Συνάρτηση για μη-αριθμητικές: πρώτη μη κενή/μη "N/A"/μη "empty"
+        def first_nonempty(series):
+            for v in series:
+                if pd.notna(v) and v not in ('N/A', 'empty', ''):
+                    return v
+            return 'N/A'
+
+        # Χτίζουμε agg dict
+        agg_funcs = {}
+        for col in dft.columns:
+            if col in key_cols:
+                continue
+            if col in numeric_cols:
+                agg_funcs[col] = 'sum'
+            else:
+                agg_funcs[col] = first_nonempty
+
+        # Ομαδοποίηση/συγχώνευση σε μία γραμμή ανά (Patient Name, Patient ID)
+        dft = dft.groupby(key_cols, as_index=False).agg(agg_funcs)
+
+        # ΜΟΝΟ στις αριθμητικές στήλες: 0 -> NaN -> "empty"
+        for col in numeric_cols:
+            if col in dft.columns:
+                dft[col] = dft[col].replace(0, float('nan'))
+        dft = dft.fillna('empty')
+
+        # === ΣTYΛ: wrap + border (όπως το είχες) ===
+        sty = (
+            dft.style
+            .set_properties(**{'text-align': 'left', 'white-space': 'wrap'})
+            .set_properties(**{'border': '1px solid black', 'border-collapse': 'collapse'})
+        )
+        sty.to_excel(writer, sheet_name="Accumulated X-Ray Dose Data", index=False)
+
 else:
     print("No valid data to write. Excel file was not created.")
 
 if os.path.exists(output_directory):
     wb = openpyxl.load_workbook(output_directory)
-    # Ensure at least one sheet is visible
     visible_sheets = [sheet for sheet in wb.sheetnames if wb[sheet].sheet_state == 'visible']
     if not visible_sheets:
         wb.active = wb.sheetnames[0]
 
     sheet1 = wb["Accumulated X-Ray Dose Data"]
-    # Set the height of the first row (header)
     sheet1.row_dimensions[1].height = 30
-    #--------
-    # commets exceeding levels
-    for i in range(2, 2 + coun):
 
-        try:
-            cell_value_e = float(sheet1[f'E{i}'].value)
-            if cell_value_e > 0.05:
-                sheet1[f'E{i}'].fill = openpyxl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-                comment = Comment(f"Exceeds trigger level: 0.05 Gym²", author)
-                sheet1[f'E{i}'].comment = comment
-            elif cell_value_e > DAP_value:
-                sheet1[f'E{i}'].fill = openpyxl.styles.PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-                comment = Comment(f"Exceeds reference level: {DAP_value} Gym²", author)
-                sheet1[f'E{i}'].comment = comment
-        except (TypeError, ValueError):
-            pass  # Ignore cells that are None or not numbers
+    # Map header -> column index
+    header_map = {cell.value: cell.column for cell in sheet1[1] if cell.value}
 
-        try:
-            cell_value_f = float(sheet1[f'F{i}'].value)
-            if cell_value_f > 5:
-                sheet1[f'F{i}'].fill = openpyxl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-                comment = Comment(f"Exceeds trigger level: 5 Gy", author)
-                sheet1[f'F{i}'].comment = comment
-            elif cell_value_f > DOSERP_value:
-                sheet1[f'F{i}'].fill = openpyxl.styles.PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-                comment = Comment(f"Exceeds reference level: {DOSERP_value} Gy", author)
-                sheet1[f'F{i}'].comment = comment
-        except (TypeError, ValueError):
-            pass  # Ignore cells that are None or not numbers
+    col_DAP   = header_map.get('Dose Area Product Total (Gym²)')
+    col_DOSERP= header_map.get('Dose (RP) Total (Gy)')
+    col_AT    = header_map.get('Total Acquisition Time (s)')
 
-        try:
-            cell_value_m = float(sheet1[f'M{i}'].value)
-            if cell_value_m > 3600:
-                sheet1[f'M{i}'].fill = openpyxl.styles.PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-                comment = Comment(f"Exceeds trigger level: 1 hour", author)
-                sheet1[f'M{i}'].comment = comment
-            elif cell_value_m > AT_value:
-                sheet1[f'M{i}'].fill = openpyxl.styles.PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-                comment = Comment(f"Exceeds reference value: {AT_value} s", author)
-                sheet1[f'M{i}'].comment = comment
-        except (TypeError, ValueError):
-            pass  # Ignore cells that are None or not numbers
-    #-------    
-    alignment_settings = openpyxl.styles.Alignment(wrap_text=True, horizontal='left')
-    for col in range(1, 18):
-        cell1 = sheet1.cell(row=1, column=col)
-        cell1.alignment = alignment_settings
-    column_widths = [13.5, 13, 10.5, 12.5, 18, 14.5, 15.5, 16, 11, 19, 14, 15, 14, 17, 15, 18, 15]
-    for i, width in enumerate(column_widths, start=1):
-        column_letter = get_column_letter(i)
-        sheet1.column_dimensions[column_letter].width = width
+    # === ΝΕΟ: εξαναγκάζουμε text format σε Patient ID και Study Date ===
+    from openpyxl.styles import Alignment
+    alignment_settings = Alignment(wrap_text=True, horizontal='left')
+
+    col_pid = header_map.get('Patient ID')
+    col_sdt = header_map.get('Study Date')
+
+    if col_pid:
+        for r in range(2, sheet1.max_row + 1):
+            c = sheet1.cell(row=r, column=col_pid)
+            c.number_format = '@'   # Text
+    if col_sdt:
+        for r in range(2, sheet1.max_row + 1):
+            c = sheet1.cell(row=r, column=col_sdt)
+            c.number_format = '@'   # Text
+
+    # === Βάψιμο / σχόλια με βάση thresholds ===
+    from openpyxl.styles import PatternFill
+    for i in range(2, sheet1.max_row + 1):
+        if col_DAP:
+            cell = sheet1.cell(row=i, column=col_DAP)
+            try:
+                val = float(cell.value)
+                if val > 0.05:
+                    cell.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+                    cell.comment = Comment(f"Exceeds trigger level: 0.05 Gym²", author)
+                elif DAP_value is not None and val > DAP_value:
+                    cell.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+                    cell.comment = Comment(f"Exceeds reference level: {DAP_value} Gym²", author)
+            except (TypeError, ValueError):
+                pass
+
+        if col_DOSERP:
+            cell = sheet1.cell(row=i, column=col_DOSERP)
+            try:
+                val = float(cell.value)
+                if val > 5:
+                    cell.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+                    cell.comment = Comment(f"Exceeds trigger level: 5 Gy", author)
+                elif DOSERP_value is not None and val > DOSERP_value:
+                    cell.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+                    cell.comment = Comment(f"Exceeds reference level: {DOSERP_value} Gy", author)
+            except (TypeError, ValueError):
+                pass
+
+        if col_AT:
+            cell = sheet1.cell(row=i, column=col_AT)
+            try:
+                val = float(cell.value)
+                if val > 3600:
+                    cell.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+                    cell.comment = Comment(f"Exceeds trigger level: 1 hour", author)
+                elif AT_value is not None and val > AT_value:
+                    cell.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+                    cell.comment = Comment(f"Exceeds reference value: {AT_value} s", author)
+            except (TypeError, ValueError):
+                pass
+
+    # Header wrap (κρατάμε τη στοίχιση)
+    for col in range(1, sheet1.max_column + 1):
+        sheet1.cell(row=1, column=col).alignment = alignment_settings
+
+    # (Προαιρετικό) πλάτος στηλών
+    from openpyxl.utils import get_column_letter
+    default_width = 15
+    for col in range(1, sheet1.max_column + 1):
+        sheet1.column_dimensions[get_column_letter(col)].width = default_width
+
     wb.save(output_directory)
 else:
     print("Excel file was not created. No data to load.")

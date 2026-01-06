@@ -64,7 +64,7 @@ class make_excel ():
         self.cfw = []
         self.iso = []
         self.defin = []
-
+        print(ex_data)
         for i in range(len(ex_data)):
 
             if ex_data [i] == "Event" and ex_data[i+1] == "X-Ray" :
