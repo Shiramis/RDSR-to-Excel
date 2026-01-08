@@ -142,7 +142,11 @@ def count_event_types(dicom_data):
                         event_type_lower = str(event_type).lower().replace('-', ' ')
                         if 'fluoro' in event_type_lower:
                             fluoro_count += 1
-                        elif ('dsa' in event_type_lower or 'digital subtraction' in event_type_lower or 'stationary acquisition' in event_type_lower):
+                        elif (
+                            'dsa' in event_type_lower
+                            or 'digital subtraction' in event_type_lower
+                            or 'stationary acquisition' in event_type_lower
+                        ):
                             dsa_count += 1
             if (0x0040, 0xA730) in item:
                 scan_sequence(item[(0x0040, 0xA730)].value)
@@ -288,7 +292,6 @@ else:
     ]
 
 total = []
-highlight_patients = set()
 processed_count = 0
 
 def report_progress(_file_path):
@@ -313,8 +316,6 @@ if total:
 
         # Κλειδιά ομαδοποίησης
         key_cols = ['Patient Name', 'Patient ID']
-        dup_counts = dft.groupby(key_cols).size()
-        highlight_patients = set(dup_counts[dup_counts > 1].index.tolist())
 
         # Δηλώνουμε ρητά ποιες στήλες είναι αριθμητικές για άθροιση
         numeric_cols = [
@@ -336,24 +337,7 @@ if total:
                 dft[col] = pd.to_numeric(dft[col], errors='coerce')
 
         # Συνάρτηση για μη-αριθμητικές: πρώτη μη κενή/μη "N/A"/μη "empty"
-        def first_nonempty(series):
-            for v in series:
-                if pd.notna(v) and v not in ('N/A', 'empty', ''):
-                    return v
-            return 'N/A'
-
-        # Χτίζουμε agg dict
-        agg_funcs = {}
-        for col in dft.columns:
-            if col in key_cols:
-                continue
-            if col in numeric_cols:
-                agg_funcs[col] = 'sum'
-            else:
-                agg_funcs[col] = first_nonempty
-
-        # Ομαδοποίηση/συγχώνευση σε μία γραμμή ανά (Patient Name, Patient ID)
-        dft = dft.groupby(key_cols, as_index=False).agg(agg_funcs)
+        # No aggregation: keep one row per DICOM SR entry.
 
         # ΜΟΝΟ στις αριθμητικές στήλες: 0 -> NaN -> "empty"
         for col in numeric_cols:
@@ -394,7 +378,6 @@ if os.path.exists(output_directory):
 
     col_pid = header_map.get('Patient ID')
     col_sdt = header_map.get('Study Date')
-    col_pname = header_map.get('Patient Name')
 
     if col_pid:
         for r in range(2, sheet1.max_row + 1):
@@ -407,14 +390,6 @@ if os.path.exists(output_directory):
 
     # === Βάψιμο / σχόλια με βάση thresholds ===
     from openpyxl.styles import PatternFill
-    if col_pname and col_pid:
-        highlight_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
-        for r in range(2, sheet1.max_row + 1):
-            pname = sheet1.cell(row=r, column=col_pname).value
-            pid = sheet1.cell(row=r, column=col_pid).value
-            if (pname, pid) in highlight_patients:
-                for c in range(1, sheet1.max_column + 1):
-                    sheet1.cell(row=r, column=c).fill = highlight_fill
     for i in range(2, sheet1.max_row + 1):
         if col_DAP:
             cell = sheet1.cell(row=i, column=col_DAP)
